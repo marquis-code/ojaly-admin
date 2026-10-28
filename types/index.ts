@@ -73,4 +73,10 @@ export interface AdminNote {
 export interface AdminCampusApplication {
   id: string; name: string; phone: string; email?: string | null; campusCode: string; campusName: string;
   year: string; socials: string; why: string; status: 'pending' | 'approved' | 'rejected'; createdAt: string;
+  ambassadorCode?: string | null; commissionKobo?: number; totalPaidKobo?: number; signups?: number; activated?: number; earnedKobo?: number; owedKobo?: number;
+}
+
+export interface AdminCampusPayout {
+  id: string; applicationId: string; ambassadorCode: string; ambassadorName: string; campusCode: string;
+  amountKobo: number; status: 'pending' | 'paid' | 'cancelled'; reference?: string | null; note: string; paidAt?: string | null; createdAt: string;
 }

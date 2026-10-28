@@ -1,5 +1,5 @@
 import { http, unwrap } from './http';
-import type { AdminAffiliatePayout, AdminAffiliateStats, AdminAuditLog, AdminBusiness, AdminCampusApplication, AdminDashboard, AdminNote, AdminPayment, AdminPlan, AdminUser, Paginated } from '~/types';
+import type { AdminAffiliatePayout, AdminAffiliateStats, AdminAuditLog, AdminBusiness, AdminCampusApplication, AdminCampusPayout, AdminDashboard, AdminNote, AdminPayment, AdminPlan, AdminUser, Paginated } from '~/types';
 
 export const adminApi = {
   login(email: string, password: string) {
@@ -34,6 +34,9 @@ export const adminApi = {
   },
   campusApplications(params: Record<string, unknown> = {}) { return unwrap<AdminCampusApplication[]>(http().get('/admin/campus-applications', { params })); },
   updateCampusApplication(id: string, status: 'pending' | 'approved' | 'rejected') { return unwrap<AdminCampusApplication>(http().patch(`/admin/campus-applications/${id}`, { status })); },
+  campusPayouts(applicationId?: string) { return unwrap<AdminCampusPayout[]>(http().get('/admin/campus-payouts', { params: { applicationId } })); },
+  createCampusPayout(id: string, payload: { amountKobo: number; note?: string }) { return unwrap<AdminCampusPayout>(http().post(`/admin/campus-applications/${id}/payouts`, payload)); },
+  updateCampusPayout(id: string, payload: { status: 'pending' | 'paid' | 'cancelled'; reference?: string }) { return unwrap<AdminCampusPayout>(http().patch(`/admin/campus-payouts/${id}`, payload)); },
   affiliates() { return unwrap<AdminAffiliateStats>(http().get('/admin/affiliates')); },
   affiliatePayouts(params: Record<string, unknown>) { return unwrap<Paginated<AdminAffiliatePayout>>(http().get('/admin/affiliate-payouts', { params })); },
   updateAffiliatePayout(id: string, payload: { status: 'paid' | 'rejected'; reference?: string; note?: string }) {

@@ -241,3 +241,25 @@ export function useAdminCampus() {
   }
   return { items, loading, saving, filter, load, setStatus };
 }
+
+export function useAdminCampusPayouts() {
+  const items = ref<import('~/types').AdminCampusPayout[]>([]);
+  const loading = ref(false);
+  const saving = ref(false);
+  async function load(applicationId?: string) {
+    loading.value = true;
+    try { items.value = await adminApi.campusPayouts(applicationId); }
+    finally { loading.value = false; }
+  }
+  async function create(applicationId: string, amountKobo: number, note?: string) {
+    saving.value = true;
+    try { const item = await adminApi.createCampusPayout(applicationId, { amountKobo, note }); await load(applicationId); return item; }
+    finally { saving.value = false; }
+  }
+  async function update(id: string, status: 'pending' | 'paid' | 'cancelled', reference?: string) {
+    saving.value = true;
+    try { const item = await adminApi.updateCampusPayout(id, { status, reference }); await load(); return item; }
+    finally { saving.value = false; }
+  }
+  return { items, loading, saving, load, create, update };
+}
