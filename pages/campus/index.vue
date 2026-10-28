@@ -4,7 +4,7 @@ import { formatDate, formatNaira } from '~/utils/format';
 useSeoMeta({ title: 'Campus applications' });
 const toast = useAdminToast();
 const { items, loading, saving, filter, load, setStatus } = useAdminCampus();
-const { create, saving: payoutSaving } = useAdminCampusPayouts();
+const { items: payouts, load: loadPayouts, create, update: updatePayout, saving: payoutSaving } = useAdminCampusPayouts();
 const payoutOpen = ref(false);
 const payoutApplication = ref<import('~/types').AdminCampusApplication | null>(null);
 const payoutAmount = ref('');
@@ -21,15 +21,19 @@ async function savePayout() {
     await create(payoutApplication.value.id, Math.round(Number(payoutAmount.value) * 100), payoutNote.value);
     toast.success('Payout recorded.');
     payoutOpen.value = false;
-    await load();
+    await Promise.all([load(), loadPayouts()]);
   } catch (error) { toast.error((error as Error).message); }
+}
+async function markPaid(id: string) {
+  try { await updatePayout(id, 'paid'); toast.success('Payout marked paid.'); }
+  catch (error) { toast.error((error as Error).message); }
 }
 async function update(id: string, status: 'approved' | 'rejected') {
   try { await setStatus(id, status); toast.success(`Application ${status}.`); }
   catch (error) { toast.error((error as Error).message); }
 }
 watch(filter, load);
-onMounted(load);
+onMounted(async () => { await Promise.all([load(), loadPayouts()]); });
 </script>
 
 <template>
@@ -54,6 +58,12 @@ onMounted(load);
         <tr v-if="!items.length && !loading"><td colspan="6"><AdminEmpty title="No applications yet" message="Campus ambassador applications from the Lagos landing page will appear here."><template #icon><GraduationCap class="h-6 w-6" /></template></AdminEmpty></td></tr>
       </template>
     </AdminTable>
+
+    <div class="rounded-2xl border border-line bg-surface">
+      <div class="border-b border-line p-4"><p class="text-xs font-bold">Payout ledger</p><p class="text-[10px] text-muted">Pending and paid ambassador commissions.</p></div>
+      <div v-if="payouts.length" class="divide-y divide-line"><div v-for="payout in payouts" :key="payout.id" class="flex flex-wrap items-center gap-2 px-4 py-3 text-[10px]"><div class="min-w-0 flex-1"><p class="font-bold">{{ payout.ambassadorName }} · {{ payout.ambassadorCode }}</p><p class="text-muted">{{ payout.note || 'No note' }} · {{ formatDate(payout.createdAt) }}</p></div><p class="font-bold">{{ formatNaira(payout.amountKobo) }}</p><AdminBadge :variant="payout.status === 'paid' ? 'success' : payout.status === 'cancelled' ? 'neutral' : 'warning'">{{ payout.status }}</AdminBadge><AdminButton v-if="payout.status === 'pending'" size="sm" variant="outline" @click="markPaid(payout.id)">Mark paid</AdminButton></div></div>
+      <p v-else class="p-4 text-[10px] text-muted">No payouts recorded yet.</p>
+    </div>
 
     <AdminModal v-model:open="payoutOpen" title="Record ambassador payout" :description="payoutApplication?.name || ''">
       <div class="space-y-3"><AdminInput v-model="payoutAmount" label="Amount (₦)" type="number" min="1" /><AdminInput v-model="payoutNote" label="Note" placeholder="UNILAG activation bonus" /><div class="rounded-lg bg-raised p-3 text-[10px] text-muted">Code: <strong>{{ payoutApplication?.ambassadorCode }}</strong> · Owed: <strong>{{ formatNaira(payoutApplication?.owedKobo || 0) }}</strong></div><div class="flex justify-end gap-2"><AdminButton variant="ghost" @click="payoutOpen = false">Cancel</AdminButton><AdminButton :loading="payoutSaving" @click="savePayout">Record payout</AdminButton></div></div>
