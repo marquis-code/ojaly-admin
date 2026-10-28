@@ -69,3 +69,8 @@ export interface AdminNote {
   id: string; targetType: 'user' | 'business'; targetId: string; authorId: string; authorName: string;
   body: string; pinned: boolean; createdAt: string; updatedAt?: string;
 }
+
+export interface AdminCampusApplication {
+  id: string; name: string; phone: string; email?: string | null; campusCode: string; campusName: string;
+  year: string; socials: string; why: string; status: 'pending' | 'approved' | 'rejected'; createdAt: string;
+}

@@ -1,5 +1,5 @@
 import { http, unwrap } from './http';
-import type { AdminAffiliatePayout, AdminAffiliateStats, AdminAuditLog, AdminBusiness, AdminDashboard, AdminNote, AdminPayment, AdminPlan, AdminUser, Paginated } from '~/types';
+import type { AdminAffiliatePayout, AdminAffiliateStats, AdminAuditLog, AdminBusiness, AdminCampusApplication, AdminDashboard, AdminNote, AdminPayment, AdminPlan, AdminUser, Paginated } from '~/types';
 
 export const adminApi = {
   login(email: string, password: string) {
@@ -32,6 +32,8 @@ export const adminApi = {
   impersonateBusiness(id: string) {
     return unwrap<{ token: string; expiresAt: string; business: { id: string; name: string; slug: string }; user: { id: string; name: string; email: string } }>(http().post(`/admin/businesses/${id}/impersonate`));
   },
+  campusApplications(params: Record<string, unknown> = {}) { return unwrap<AdminCampusApplication[]>(http().get('/admin/campus-applications', { params })); },
+  updateCampusApplication(id: string, status: 'pending' | 'approved' | 'rejected') { return unwrap<AdminCampusApplication>(http().patch(`/admin/campus-applications/${id}`, { status })); },
   affiliates() { return unwrap<AdminAffiliateStats>(http().get('/admin/affiliates')); },
   affiliatePayouts(params: Record<string, unknown>) { return unwrap<Paginated<AdminAffiliatePayout>>(http().get('/admin/affiliate-payouts', { params })); },
   updateAffiliatePayout(id: string, payload: { status: 'paid' | 'rejected'; reference?: string; note?: string }) {

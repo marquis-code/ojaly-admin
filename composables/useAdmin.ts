@@ -223,3 +223,21 @@ export function useAdminExport() {
   }
   return { exporting, download };
 }
+
+export function useAdminCampus() {
+  const items = ref<import('~/types').AdminCampusApplication[]>([]);
+  const loading = ref(false);
+  const saving = ref(false);
+  const filter = ref('all');
+  async function load() {
+    loading.value = true;
+    try { items.value = await adminApi.campusApplications({ status: filter.value }); }
+    finally { loading.value = false; }
+  }
+  async function setStatus(id: string, status: 'pending' | 'approved' | 'rejected') {
+    saving.value = true;
+    try { const updated = await adminApi.updateCampusApplication(id, status); await load(); return updated; }
+    finally { saving.value = false; }
+  }
+  return { items, loading, saving, filter, load, setStatus };
+}
