@@ -33,7 +33,7 @@ onMounted(load);
 
       <div class="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <div class="rounded-2xl border border-line bg-surface p-4">
-          <div class="flex flex-wrap items-center justify-between gap-2"><div><p class="text-xs font-bold">Platform trend</p><p class="text-[10px] text-muted">Last 14 days</p></div><div class="flex rounded-lg border border-line p-0.5"><button class="rounded-md px-2.5 py-1 text-[9px] font-bold" :class="metric === 'revenue' ? 'bg-acid text-forest-950' : 'text-muted'" @click="metric = 'revenue'">Revenue</button><button class="rounded-md px-2.5 py-1 text-[9px] font-bold" :class="metric === 'growth' ? 'bg-acid text-forest-950' : 'text-muted'" @click="metric = 'growth'">Signups</button></div></div>
+          <div class="flex flex-wrap items-center justify-between gap-2"><div><p class="text-xs font-bold">Platform trend</p><p class="text-[10px] text-muted">Last 14 days</p></div><div class="flex rounded-lg border border-line p-0.5"><button class="rounded-md px-2.5 py-1 text-[9px] font-bold" :class="metric === 'revenue' ? 'bg-acid text-white' : 'text-muted'" @click="metric = 'revenue'">Revenue</button><button class="rounded-md px-2.5 py-1 text-[9px] font-bold" :class="metric === 'growth' ? 'bg-acid text-white' : 'text-muted'" @click="metric = 'growth'">Signups</button></div></div>
           <AdminAreaChart :data="data.growth" :metric="metric" class="mt-3" />
         </div>
         <div class="rounded-2xl border border-line bg-surface p-4">

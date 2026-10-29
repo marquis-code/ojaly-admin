@@ -8,7 +8,7 @@
   body { @apply bg-canvas font-sans text-ink antialiased; }
   h1,h2,h3,h4 { @apply font-display; }
   button, a, input, select, textarea { @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-canvas; }
-  ::selection { background: #C8FF00; color: #08110D; }
+  ::selection { background: #FF5A1F; color: #ffffff; }
 }
 @layer components {
   .card { @apply rounded-2xl border border-line bg-surface; }

@@ -2,7 +2,7 @@
 import { Loader2 } from 'lucide-vue-next';
 withDefaults(defineProps<{ variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'; size?: 'sm' | 'md'; loading?: boolean; disabled?: boolean; to?: string; block?: boolean; type?: 'button' | 'submit' }>(), { variant: 'primary', size: 'md', loading: false, disabled: false, block: false, type: 'button' });
 const variants = {
-  primary: 'bg-acid text-forest-950 hover:brightness-95',
+  primary: 'bg-acid text-white hover:bg-brand-600',
   secondary: 'bg-surface border border-line text-ink hover:bg-raised',
   outline: 'border border-line text-ink hover:border-acid hover:text-acid',
   ghost: 'text-muted hover:bg-raised hover:text-ink',
