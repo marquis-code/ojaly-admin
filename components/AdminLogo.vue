@@ -1,1 +1,10 @@
-<template><span class="inline-flex items-center gap-2"><span class="relative flex h-8 w-8 items-center justify-center rounded-lg bg-acid"><span class="font-display text-sm font-bold text-forest-950">o</span></span><span class="font-display text-lg font-bold tracking-tight">ojaly <span class="text-acid">ops</span></span></span></template>
+<script setup lang="ts">
+withDefaults(defineProps<{ light?: boolean }>(), { light: false });
+</script>
+
+<template>
+  <span class="inline-flex items-center gap-2">
+    <img :src="light ? '/brand/ojaly-logo-light.svg' : '/brand/ojaly-logo.svg'" alt="Ojaly" class="h-8 w-auto">
+    <span class="rounded-full bg-brand-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-brand-600">ops</span>
+  </span>
+</template>

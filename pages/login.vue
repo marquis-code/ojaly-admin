@@ -24,7 +24,7 @@ async function submit() {
     <div class="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-acid/10 blur-3xl" />
     <div class="absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-brand-500/10 blur-3xl" />
     <div class="relative w-full max-w-sm">
-      <div class="mb-8 flex items-center justify-between"><AdminLogo /><span class="rounded-full border border-acid/30 bg-acid/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest text-acid">Internal</span></div>
+      <div class="mb-8 flex items-center justify-between"><AdminLogo light /><span class="rounded-full border border-acid/30 bg-acid/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest text-acid">Internal</span></div>
       <div class="rounded-2xl border border-line bg-surface/90 p-6 shadow-lift backdrop-blur">
         <p class="eyebrow">Control room</p>
         <h1 class="mt-2 font-display text-2xl font-bold tracking-tight">Platform access only.</h1>
