@@ -80,3 +80,12 @@ export interface AdminCampusPayout {
   id: string; applicationId: string; ambassadorCode: string; ambassadorName: string; campusCode: string;
   amountKobo: number; status: 'pending' | 'paid' | 'cancelled'; reference?: string | null; note: string; paidAt?: string | null; createdAt: string;
 }
+
+export interface AdminMarketplaceBusiness {
+  id: string; name: string; slug: string; campusCode: string; campusName: string;
+  verified: boolean; verifiedAt?: string | null; createdAt: string; firstSaleAt?: string | null;
+}
+export interface AdminMarketplaceDashboard {
+  campuses: { code: string; name: string; shortName: string; city: string; slug: string; businesses: number; verified: number; activated: number; bookings: number; completed: number; gmvKobo: number; commissionKobo: number; repeatCustomers: number }[];
+  totals: { businesses: number; verified: number; bookings: number; gmvKobo: number; commissionKobo: number };
+}

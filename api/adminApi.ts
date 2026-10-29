@@ -1,5 +1,5 @@
 import { http, unwrap } from './http';
-import type { AdminAffiliatePayout, AdminAffiliateStats, AdminAuditLog, AdminBusiness, AdminCampusApplication, AdminCampusPayout, AdminDashboard, AdminNote, AdminPayment, AdminPlan, AdminUser, Paginated } from '~/types';
+import type { AdminAffiliatePayout, AdminAffiliateStats, AdminAuditLog, AdminBusiness, AdminCampusApplication, AdminCampusPayout, AdminDashboard, AdminMarketplaceBusiness, AdminMarketplaceDashboard, AdminNote, AdminPayment, AdminPlan, AdminUser, Paginated } from '~/types';
 
 export const adminApi = {
   login(email: string, password: string) {
@@ -32,6 +32,9 @@ export const adminApi = {
   impersonateBusiness(id: string) {
     return unwrap<{ token: string; expiresAt: string; business: { id: string; name: string; slug: string }; user: { id: string; name: string; email: string } }>(http().post(`/admin/businesses/${id}/impersonate`));
   },
+  marketplaceDashboard() { return unwrap<AdminMarketplaceDashboard>(http().get('/admin/marketplace/dashboard')); },
+  marketplaceBusinesses(campus?: string) { return unwrap<AdminMarketplaceBusiness[]>(http().get('/admin/marketplace/businesses', { params: { campus } })); },
+  verifyMarketplaceBusiness(id: string, verified: boolean) { return unwrap<{ id: string; verified: boolean }>(http().patch(`/admin/marketplace/businesses/${id}/verify`, { verified })); },
   campusApplications(params: Record<string, unknown> = {}) { return unwrap<AdminCampusApplication[]>(http().get('/admin/campus-applications', { params })); },
   updateCampusApplication(id: string, status: 'pending' | 'approved' | 'rejected') { return unwrap<AdminCampusApplication>(http().patch(`/admin/campus-applications/${id}`, { status })); },
   campusPayouts(applicationId?: string) { return unwrap<AdminCampusPayout[]>(http().get('/admin/campus-payouts', { params: { applicationId } })); },

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Activity, ArrowUpRight, Building2, CreditCard, FileClock, Gift, LayoutDashboard, LogOut, Menu, GraduationCap, MessageCircle, Search, ShieldCheck, Users, X, Zap } from 'lucide-vue-next';
+import { Activity, ArrowUpRight, Building2, CreditCard, FileClock, Gift, LayoutDashboard, LogOut, Menu, GraduationCap, MessageCircle, Store, Search, ShieldCheck, Users, X, Zap } from 'lucide-vue-next';
 const auth = useAdminAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -7,7 +7,7 @@ const open = ref(false);
 const groups = [
   { label: 'Observe', links: [{ to: '/', label: 'Overview', icon: LayoutDashboard }, { to: '/audit', label: 'Audit log', icon: FileClock }] },
   { label: 'Network', links: [{ to: '/users', label: 'Users', icon: Users }, { to: '/businesses', label: 'Businesses', icon: Building2 }] },
-  { label: 'Growth', links: [{ to: '/campus', label: 'Campus applications', icon: GraduationCap }] },
+  { label: 'Growth', links: [{ to: '/marketplace', label: 'Campus marketplace', icon: Store }, { to: '/campus', label: 'Campus applications', icon: GraduationCap }] },
   { label: 'Revenue', links: [{ to: '/payments', label: 'Payments', icon: CreditCard }, { to: '/plans', label: 'Plans & coupons', icon: Zap }, { to: '/affiliates', label: 'Affiliates & payouts', icon: Gift }] },
   { label: 'Operations', links: [{ to: '/whatsapp', label: 'WhatsApp health', icon: MessageCircle }] },
 ];

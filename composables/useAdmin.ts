@@ -263,3 +263,17 @@ export function useAdminCampusPayouts() {
   }
   return { items, loading, saving, load, create, update };
 }
+
+export function useAdminMarketplace() {
+  const dashboard = ref<import('~/types').AdminMarketplaceDashboard | null>(null);
+  const businesses = ref<import('~/types').AdminMarketplaceBusiness[]>([]);
+  const loading = ref(false);
+  const campus = ref('');
+  async function load() {
+    loading.value = true;
+    try { [dashboard.value, businesses.value] = await Promise.all([adminApi.marketplaceDashboard(), adminApi.marketplaceBusinesses(campus.value || undefined)]); }
+    finally { loading.value = false; }
+  }
+  async function verify(id: string, verified: boolean) { await adminApi.verifyMarketplaceBusiness(id, verified); await load(); }
+  return { dashboard, businesses, loading, campus, load, verify };
+}
