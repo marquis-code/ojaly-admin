@@ -83,7 +83,7 @@ export interface AdminCampusPayout {
 
 export interface AdminMarketplaceBusiness {
   id: string; name: string; slug: string; campusCode: string; campusName: string;
-  verified: boolean; verifiedAt?: string | null; createdAt: string; firstSaleAt?: string | null;
+  verified: boolean; verifiedAt?: string | null; verificationRequestedAt?: string | null; storefrontPublished?: boolean; createdAt: string; firstSaleAt?: string | null;
 }
 export interface AdminMarketplaceDashboard {
   campuses: { code: string; name: string; shortName: string; city: string; slug: string; businesses: number; verified: number; activated: number; bookings: number; completed: number; gmvKobo: number; commissionKobo: number; repeatCustomers: number }[];
