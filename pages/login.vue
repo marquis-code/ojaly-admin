@@ -3,6 +3,7 @@ import { ArrowRight, BadgeCheck, LockKeyhole, ShieldCheck, TrendingUp } from 'lu
 definePageMeta({ layout: false });
 useSeoMeta({ title: 'Platform sign in', robots: 'noindex' });
 const auth = useAdminAuthStore();
+const config = useRuntimeConfig();
 const router = useRouter();
 const email = ref('');
 const password = ref('');
@@ -38,7 +39,7 @@ async function submit() {
           </div>
           <div v-if="error" class="mt-3 rounded-lg border border-danger/20 bg-danger/5 p-2.5 text-[11px] font-medium text-danger" role="alert">{{ error }}</div>
           <AdminButton type="submit" block :loading="submitting" class="mt-4">Enter control room <ArrowRight class="h-3.5 w-3.5" /></AdminButton>
-          <p class="mt-3 text-center text-[10px] leading-relaxed text-muted">Ojaly staff only. Need access? Ask a super admin to invite you.</p>
+          <p class="mt-3 text-center text-[10px] leading-relaxed text-muted">Ojaly staff only. <a :href="`${config.public.appUrl}/forgot-password`" class="font-bold text-brand-600 underline underline-offset-2">Forgot password?</a> Need access? Ask a super admin to invite you.</p>
         </form>
 
         <div class="mt-5 flex items-start gap-2 rounded-xl border border-line bg-white/60 p-3 text-[10px] leading-relaxed text-muted">
