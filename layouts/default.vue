@@ -4,6 +4,7 @@ const auth = useAdminAuthStore();
 const route = useRoute();
 const router = useRouter();
 const open = ref(false);
+const confirmLogout = ref(false);
 const groups = [
   { label: 'Observe', links: [{ to: '/', label: 'Overview', icon: LayoutDashboard }, { to: '/audit', label: 'Audit log', icon: FileClock }] },
   { label: 'Network', links: [{ to: '/users', label: 'Users', icon: Users }, { to: '/businesses', label: 'Businesses', icon: Building2 }] },
@@ -12,7 +13,8 @@ const groups = [
   { label: 'Operations', links: [{ to: '/whatsapp', label: 'WhatsApp health', icon: MessageCircle }] },
 ];
 const active = (to: string) => to === '/' ? route.path === '/' : route.path.startsWith(to);
-async function logout() { await auth.logout(); await router.push('/login'); }
+function requestLogout() { confirmLogout.value = true; }
+async function logout() { confirmLogout.value = false; await auth.logout(); await router.push('/login'); }
 </script>
 
 <template>
@@ -27,7 +29,7 @@ async function logout() { await auth.logout(); await router.push('/login'); }
         <div v-for="group in groups" :key="group.label" class="mb-4"><p class="mb-1 px-2.5 text-[9px] font-bold uppercase tracking-[0.16em] text-muted/60">{{ group.label }}</p><NuxtLink v-for="link in group.links" :key="link.to" :to="link.to" class="flex min-h-[40px] items-center gap-2.5 rounded-lg px-2.5 text-xs font-semibold transition" :class="active(link.to) ? 'bg-acid text-white' : 'text-muted hover:bg-raised hover:text-ink'" @click="open = false"><component :is="link.icon" class="h-4 w-4" />{{ link.label }}<ArrowUpRight v-if="active(link.to)" class="ml-auto h-3 w-3" /></NuxtLink></div>
       </nav>
       <div class="border-t border-line p-3">
-        <div class="flex items-center gap-2 rounded-lg bg-raised/60 p-2"><div class="flex h-8 w-8 items-center justify-center rounded-full bg-acid text-xs font-bold text-white">{{ auth.user?.name?.slice(0, 2).toUpperCase() }}</div><div class="min-w-0 flex-1"><p class="truncate text-[11px] font-bold">{{ auth.user?.name }}</p><p class="text-[9px] uppercase tracking-wider text-acid">{{ auth.user?.platformRole?.replace('_', ' ') }}</p></div><button class="text-muted hover:text-danger" aria-label="Sign out" @click="logout"><LogOut class="h-4 w-4" /></button></div>
+        <div class="flex items-center gap-2 rounded-lg bg-raised/60 p-2"><div class="flex h-8 w-8 items-center justify-center rounded-full bg-acid text-xs font-bold text-white">{{ auth.user?.name?.slice(0, 2).toUpperCase() }}</div><div class="min-w-0 flex-1"><p class="truncate text-[11px] font-bold">{{ auth.user?.name }}</p><p class="text-[9px] uppercase tracking-wider text-acid">{{ auth.user?.platformRole?.replace('_', ' ') }}</p></div><button class="text-muted hover:text-danger" aria-label="Sign out" @click="requestLogout"><LogOut class="h-4 w-4" /></button></div>
         <p class="mt-2 flex items-center gap-1 text-[9px] text-muted"><ShieldCheck class="h-3 w-3" /> {{ auth.isSuperAdmin ? 'Full super admin access' : 'Support read-only access' }}</p>
       </div>
     </aside>
@@ -39,4 +41,15 @@ async function logout() { await auth.logout(); await router.push('/login'); }
       <main class="p-4 sm:p-6"><slot /></main>
     </div>
   </div>
+
+  <AdminModal v-model:open="confirmLogout" title="Sign out of Ojaly Ops?" description="You will return to the secure sign-in screen." size="sm">
+    <div class="flex items-start gap-3 rounded-xl border border-line bg-raised/50 p-3 text-[11px] leading-relaxed text-muted">
+      <LogOut class="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+      <p>Admin sessions are short-lived. You can sign back in with your authorised account.</p>
+    </div>
+    <div class="mt-4 flex justify-end gap-2">
+      <AdminButton variant="ghost" @click="confirmLogout = false">Stay signed in</AdminButton>
+      <AdminButton variant="danger" @click="logout"><LogOut class="h-3.5 w-3.5" /> Sign out</AdminButton>
+    </div>
+  </AdminModal>
 </template>
