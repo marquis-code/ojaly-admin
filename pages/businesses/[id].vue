@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, CalendarPlus, ExternalLink, PauseCircle, PlayCircle, RefreshCw, ShieldAlert, Ticket, UserCog } from 'lucide-vue-next';
+import { ArrowLeft, CalendarPlus, ExternalLink, PauseCircle, Percent, PlayCircle, RefreshCw, ShieldAlert, Ticket, UserCog } from 'lucide-vue-next';
 import { useAdminAuthStore } from '~/stores/auth';
 import { formatDate, formatNaira, titleCase } from '~/utils/format';
 useSeoMeta({ title: 'Business detail' });
@@ -8,7 +8,7 @@ const toast = useAdminToast();
 const auth = useAdminAuthStore();
 const config = useRuntimeConfig();
 const notesApi = useAdminNotes('business', String(route.params.id));
-const { business: data, plans, loading, saving, loadBusiness, loadPlans, changePlan: persistPlan, extendTrial: persistTrial, suspend: persistSuspend, grantCoupon: persistCoupon, impersonate } = useAdminBusinesses();
+const { business: data, plans, loading, saving, loadBusiness, loadPlans, changePlan: persistPlan, extendTrial: persistTrial, suspend: persistSuspend, updateServiceCharge: persistServiceCharge, grantCoupon: persistCoupon, impersonate } = useAdminBusinesses();
 const planOpen = ref(false);
 const trialOpen = ref(false);
 const suspendOpen = ref(false);
@@ -20,6 +20,32 @@ const trialPlan = ref('');
 const suspendReason = ref('');
 const note = ref('');
 const coupon = reactive({ code: '', percentOff: 20, amountOff: '', expiresAt: '' });
+const chargeOpen = ref(false);
+const charge = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
+const chargePreview = computed(() => {
+  if (!charge.enabled) return 'Disabled — customers pay the service price only.';
+  return charge.type === 'percent' ? `${charge.percent || 0}% added to the service subtotal.` : `₦${Number(charge.fixed || 0).toLocaleString('en-NG')} added per booking.`;
+});
+function openCharge() {
+  charge.enabled = Boolean(data.value?.business?.serviceChargeEnabled);
+  charge.type = data.value?.business?.serviceChargeType || 'percent';
+  charge.percent = data.value?.business?.serviceChargePercent ?? 5;
+  charge.fixed = data.value?.business?.serviceChargeFixedKobo ? String(data.value.business.serviceChargeFixedKobo / 100) : '';
+  chargeOpen.value = true;
+}
+async function saveCharge() {
+  saving.value = true;
+  try {
+    await persistServiceCharge(String(route.params.id), {
+      enabled: charge.enabled, type: charge.type, percent: Number(charge.percent) || 0,
+      fixedKobo: Math.round(Number(charge.fixed || 0) * 100),
+    });
+    toast.success('Service charge updated.');
+    chargeOpen.value = false;
+    await load();
+  } catch (error) { toast.error((error as Error).message); }
+  finally { saving.value = false; }
+}
 async function load() {
   loading.value = true;
   try { await loadBusiness(String(route.params.id)); planKey.value = data.value?.subscription?.planKey || data.value?.plan?.key || 'free'; trialPlan.value = data.value?.subscription?.planKey !== 'free' ? data.value?.subscription?.planKey : 'hustle'; }
@@ -77,6 +103,16 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
         <div class="card p-5"><p class="text-xs font-bold">Admin controls</p><p v-if="!auth.isSuperAdmin" class="mt-2 rounded-lg bg-warning/10 p-2.5 text-[10px] text-warning">Support access is read-only.</p><div v-else class="mt-3 grid gap-2"><AdminButton variant="outline" @click="planOpen = true"><UserCog class="h-3.5 w-3.5" /> Change plan</AdminButton><AdminButton variant="outline" @click="trialOpen = true"><CalendarPlus class="h-3.5 w-3.5" /> Extend trial</AdminButton><AdminButton variant="outline" @click="couponOpen = true"><Ticket class="h-3.5 w-3.5" /> Grant coupon</AdminButton><AdminButton variant="outline" :loading="saving" @click="startImpersonation"><ShieldAlert class="h-3.5 w-3.5" /> Impersonate owner</AdminButton><AdminButton :variant="data.business.isSuspended ? 'primary' : 'danger'" @click="suspendOpen = true"><PlayCircle v-if="data.business.isSuspended" class="h-3.5 w-3.5" /><PauseCircle v-else class="h-3.5 w-3.5" /> {{ data.business.isSuspended ? 'Restore business' : 'Suspend business' }}</AdminButton></div></div>
       </div>
 
+      <div class="card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-raised"><Percent class="h-4 w-4" /></div>
+            <div><p class="text-xs font-bold">Customer service charge</p><p class="mt-1 text-[11px] text-muted">Added to the service subtotal at booking checkout.</p><p class="mt-2 text-sm font-bold">{{ data.business.serviceChargeEnabled ? (data.business.serviceChargeType === 'fixed' ? formatNaira(data.business.serviceChargeFixedKobo) : `${data.business.serviceChargePercent}%`) : 'Not enabled' }}</p></div>
+          </div>
+          <AdminButton v-if="auth.isSuperAdmin" variant="outline" @click="openCharge">Configure</AdminButton>
+        </div>
+      </div>
+
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="card"><div class="border-b border-line p-4"><p class="text-xs font-bold">Team</p></div><div class="divide-y divide-line"><div v-for="member in data.memberships" :key="member.id" class="flex flex-wrap items-center gap-2 px-4 py-3 text-[11px]"><p class="font-semibold">{{ member.user?.name }}</p><span class="text-[9px] text-muted">{{ member.user?.email }}</span><AdminBadge class="ml-auto" :variant="member.role === 'owner' ? 'accent' : 'neutral'">{{ member.role }}</AdminBadge><span class="text-[9px] text-muted">{{ member.status }}</span></div></div></div>
         <div class="card"><div class="border-b border-line p-4"><p class="text-xs font-bold">Payment history</p></div><div class="divide-y divide-line"><div v-for="payment in data.payments" :key="payment.id" class="flex items-center justify-between gap-2 px-4 py-2.5 text-[10px]"><div><p class="font-mono">{{ payment.reference }}</p><p class="text-muted">{{ payment.purpose }} · {{ formatDate(payment.createdAt, true) }}</p></div><div class="text-right"><p class="font-bold">{{ formatNaira(payment.amountKobo) }}</p><AdminBadge :variant="payment.status === 'success' ? 'success' : payment.status === 'failed' ? 'danger' : 'warning'">{{ payment.status }}</AdminBadge></div></div><p v-if="!data.payments.length" class="p-4 text-[10px] text-muted">No payments yet.</p></div></div>
@@ -101,6 +137,17 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
       <AdminModal v-model:open="couponOpen" title="Grant a coupon" description="A private discount code tied to this business.">
         <div class="grid gap-3 sm:grid-cols-2"><AdminInput v-model="coupon.code" label="Code" placeholder="TOLA20" /><AdminInput v-model.number="coupon.percentOff" label="Percent off" type="number" /><AdminInput v-model="coupon.amountOff" label="Extra ₦ off (optional)" /><AdminDatePicker v-model="coupon.expiresAt" label="Expires (optional)" /></div>
         <div class="mt-4 flex justify-end gap-2"><AdminButton variant="ghost" @click="couponOpen = false">Cancel</AdminButton><AdminButton :loading="saving" @click="grantCoupon"><Ticket class="h-3.5 w-3.5" /> Grant coupon</AdminButton></div>
+      </AdminModal>
+      <AdminModal v-model:open="chargeOpen" title="Customer service charge" description="This is collected from the customer on top of the service subtotal at checkout. It is not the marketplace fee.">
+        <div class="space-y-3">
+          <label class="flex items-center gap-2 text-xs font-semibold"><input v-model="charge.enabled" type="checkbox" class="rounded"> Enable service charge for this business</label>
+          <AdminSelect v-model="charge.type" label="Charge type" :options="[{ value: 'percent', label: 'Percentage of service subtotal' }, { value: 'fixed', label: 'Fixed amount per booking' }]" :disabled="!charge.enabled" />
+          <AdminInput v-if="charge.type === 'percent'" v-model.number="charge.percent" label="Percentage" type="number" min="0" max="100" hint="Example: 5 adds 5% to the service price." :disabled="!charge.enabled" />
+          <AdminInput v-else v-model="charge.fixed" label="Fixed amount (₦)" inputmode="decimal" hint="Example: 500 adds ₦500 per booking." :disabled="!charge.enabled" />
+          <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]"><p class="font-semibold">Customer preview</p><p class="mt-1 text-muted">{{ chargePreview }}</p><p class="mt-1 text-muted">A ₦20,000 service would become {{ formatNaira(charge.type === 'percent' ? 2000000 + Math.round(2000000 * (Number(charge.percent) || 0) / 100) : 2000000 + Math.round(Number(charge.fixed || 0) * 100)) }}.</p></div>
+          <p class="text-[10px] leading-relaxed text-muted">The charge is calculated server-side when the booking is created. Existing bookings keep the charge that applied when they were booked.</p>
+        </div>
+        <div class="mt-4 flex justify-end gap-2"><AdminButton variant="ghost" @click="chargeOpen = false">Cancel</AdminButton><AdminButton :loading="saving" @click="saveCharge">Save service charge</AdminButton></div>
       </AdminModal>
     </template>
   </div>

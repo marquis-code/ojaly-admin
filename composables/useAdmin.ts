@@ -69,6 +69,11 @@ export function useAdminBusinesses() {
     try { return await adminApi.suspendBusiness(id, payload); }
     finally { saving.value = false; }
   }
+  async function updateServiceCharge(id: string, payload: { enabled: boolean; type: 'percent' | 'fixed'; percent?: number; fixedKobo?: number }) {
+    saving.value = true;
+    try { return await adminApi.updateServiceCharge(id, payload); }
+    finally { saving.value = false; }
+  }
   async function grantCoupon(payload: Record<string, unknown>) {
     saving.value = true;
     try { return await adminApi.createCoupon(payload); }
@@ -79,7 +84,7 @@ export function useAdminBusinesses() {
     try { return await adminApi.impersonateBusiness(id); }
     finally { saving.value = false; }
   }
-  return { result, business, plans, loading, saving, list, loadBusiness, loadPlans, changePlan, extendTrial, suspend, grantCoupon, impersonate };
+  return { result, business, plans, loading, saving, list, loadBusiness, loadPlans, changePlan, extendTrial, suspend, updateServiceCharge, grantCoupon, impersonate };
 }
 
 export function useAdminPlans() {
