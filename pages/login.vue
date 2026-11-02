@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, BadgeCheck, LockKeyhole, ShieldCheck, TrendingUp } from 'lucide-vue-next';
+import { ArrowRight, BadgeCheck, Eye, EyeOff, LockKeyhole, ShieldCheck, TrendingUp } from 'lucide-vue-next';
 definePageMeta({ layout: false });
 useSeoMeta({ title: 'Platform sign in', robots: 'noindex' });
 const auth = useAdminAuthStore();
@@ -7,6 +7,7 @@ const config = useRuntimeConfig();
 const router = useRouter();
 const email = ref('');
 const password = ref('');
+const showPassword = ref(false);
 const error = ref('');
 const submitting = ref(false);
 async function submit() {
@@ -35,7 +36,9 @@ async function submit() {
         <form class="mt-7 rounded-2xl border border-line bg-white p-5 shadow-[0_18px_50px_-30px_rgba(6,35,26,0.35)] sm:p-6" @submit.prevent="submit">
           <div class="space-y-3.5">
             <AdminInput v-model="email" label="Work email" type="email" placeholder="you@ojaly.org" autocomplete="username" />
-            <AdminInput v-model="password" label="Password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+            <AdminInput v-model="password" label="Password" :type="showPassword ? 'text' : 'password'" placeholder="Enter your password" autocomplete="current-password">
+              <template #suffix><button type="button" class="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-muted hover:bg-raised hover:text-ink" :aria-label="showPassword ? 'Hide password' : 'Show password'" @click="showPassword = !showPassword"><EyeOff v-if="showPassword" class="h-3.5 w-3.5" /><Eye v-else class="h-3.5 w-3.5" /></button></template>
+            </AdminInput>
           </div>
           <div v-if="error" class="mt-3 rounded-lg border border-danger/20 bg-danger/5 p-2.5 text-[11px] font-medium text-danger" role="alert">{{ error }}</div>
           <AdminButton type="submit" block :loading="submitting" class="mt-4">Enter control room <ArrowRight class="h-3.5 w-3.5" /></AdminButton>
