@@ -8,7 +8,7 @@ const toast = useAdminToast();
 const auth = useAdminAuthStore();
 const config = useRuntimeConfig();
 const notesApi = useAdminNotes('business', String(route.params.id));
-const { business: data, plans, loading, saving, loadBusiness, loadPlans, changePlan: persistPlan, extendTrial: persistTrial, suspend: persistSuspend, updateServiceCharge: persistServiceCharge, grantCoupon: persistCoupon, impersonate } = useAdminBusinesses();
+const { business: data, plans, loading, saving, loadBusiness, loadPlans, changePlan: persistPlan, extendTrial: persistTrial, suspend: persistSuspend, updateServiceCharge: persistServiceCharge, updateProviderFee: persistProviderFee, grantCoupon: persistCoupon, impersonate } = useAdminBusinesses();
 const planOpen = ref(false);
 const trialOpen = ref(false);
 const suspendOpen = ref(false);
@@ -22,6 +22,32 @@ const note = ref('');
 const coupon = reactive({ code: '', percentOff: 20, amountOff: '', expiresAt: '' });
 const chargeOpen = ref(false);
 const charge = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
+const providerFeeOpen = ref(false);
+const providerFee = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
+const providerFeePreview = computed(() => {
+  if (!providerFee.enabled) return 'Disabled — the provider keeps the full service subtotal.';
+  return providerFee.type === 'percent' ? `${providerFee.percent || 0}% deducted from the provider subtotal.` : `₦${Number(providerFee.fixed || 0).toLocaleString('en-NG')} deducted per booking.`;
+});
+function openProviderFee() {
+  providerFee.enabled = Boolean(data.value?.business?.providerFeeEnabled);
+  providerFee.type = data.value?.business?.providerFeeType || 'percent';
+  providerFee.percent = data.value?.business?.providerFeePercent ?? 5;
+  providerFee.fixed = data.value?.business?.providerFeeFixedKobo ? String(data.value.business.providerFeeFixedKobo / 100) : '';
+  providerFeeOpen.value = true;
+}
+async function saveProviderFee() {
+  saving.value = true;
+  try {
+    await persistProviderFee(String(route.params.id), {
+      enabled: providerFee.enabled, type: providerFee.type, percent: Number(providerFee.percent) || 0,
+      fixedKobo: Math.round(Number(providerFee.fixed || 0) * 100),
+    });
+    toast.success('Provider fee updated.');
+    providerFeeOpen.value = false;
+    await load();
+  } catch (error) { toast.error((error as Error).message); }
+  finally { saving.value = false; }
+}
 const chargePreview = computed(() => {
   if (!charge.enabled) return 'Disabled — customers pay the service price only.';
   return charge.type === 'percent' ? `${charge.percent || 0}% added to the service subtotal.` : `₦${Number(charge.fixed || 0).toLocaleString('en-NG')} added per booking.`;
@@ -113,6 +139,16 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
         </div>
       </div>
 
+      <div class="card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-raised"><Percent class="h-4 w-4" /></div>
+            <div><p class="text-xs font-bold">Provider platform fee</p><p class="mt-1 text-[11px] text-muted">Deducted from the provider subtotal. Never shown to the customer.</p><p class="mt-2 text-sm font-bold">{{ data.business.providerFeeEnabled ? (data.business.providerFeeType === 'fixed' ? formatNaira(data.business.providerFeeFixedKobo) : `${data.business.providerFeePercent}%`) : 'Not enabled' }}</p></div>
+          </div>
+          <AdminButton v-if="auth.isSuperAdmin" variant="outline" @click="openProviderFee">Configure</AdminButton>
+        </div>
+      </div>
+
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="card"><div class="border-b border-line p-4"><p class="text-xs font-bold">Team</p></div><div class="divide-y divide-line"><div v-for="member in data.memberships" :key="member.id" class="flex flex-wrap items-center gap-2 px-4 py-3 text-[11px]"><p class="font-semibold">{{ member.user?.name }}</p><span class="text-[9px] text-muted">{{ member.user?.email }}</span><AdminBadge class="ml-auto" :variant="member.role === 'owner' ? 'accent' : 'neutral'">{{ member.role }}</AdminBadge><span class="text-[9px] text-muted">{{ member.status }}</span></div></div></div>
         <div class="card"><div class="border-b border-line p-4"><p class="text-xs font-bold">Payment history</p></div><div class="divide-y divide-line"><div v-for="payment in data.payments" :key="payment.id" class="flex items-center justify-between gap-2 px-4 py-2.5 text-[10px]"><div><p class="font-mono">{{ payment.reference }}</p><p class="text-muted">{{ payment.purpose }} · {{ formatDate(payment.createdAt, true) }}</p></div><div class="text-right"><p class="font-bold">{{ formatNaira(payment.amountKobo) }}</p><AdminBadge :variant="payment.status === 'success' ? 'success' : payment.status === 'failed' ? 'danger' : 'warning'">{{ payment.status }}</AdminBadge></div></div><p v-if="!data.payments.length" class="p-4 text-[10px] text-muted">No payments yet.</p></div></div>
@@ -137,6 +173,17 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
       <AdminModal v-model:open="couponOpen" title="Grant a coupon" description="A private discount code tied to this business.">
         <div class="grid gap-3 sm:grid-cols-2"><AdminInput v-model="coupon.code" label="Code" placeholder="TOLA20" /><AdminInput v-model.number="coupon.percentOff" label="Percent off" type="number" /><AdminInput v-model="coupon.amountOff" label="Extra ₦ off (optional)" /><AdminDatePicker v-model="coupon.expiresAt" label="Expires (optional)" /></div>
         <div class="mt-4 flex justify-end gap-2"><AdminButton variant="ghost" @click="couponOpen = false">Cancel</AdminButton><AdminButton :loading="saving" @click="grantCoupon"><Ticket class="h-3.5 w-3.5" /> Grant coupon</AdminButton></div>
+      </AdminModal>
+      <AdminModal v-model:open="providerFeeOpen" title="Provider platform fee" description="This is deducted from what the provider earns on each completed booking. It is never included in the customer checkout.">
+        <div class="space-y-3">
+          <label class="flex items-center gap-2 text-xs font-semibold"><input v-model="providerFee.enabled" type="checkbox" class="rounded"> Enable provider fee for this business</label>
+          <AdminSelect v-model="providerFee.type" label="Fee type" :options="[{ value: 'percent', label: 'Percentage of provider subtotal' }, { value: 'fixed', label: 'Fixed amount per booking' }]" :disabled="!providerFee.enabled" />
+          <AdminInput v-if="providerFee.type === 'percent'" v-model.number="providerFee.percent" label="Percentage" type="number" min="0" max="100" hint="Example: 10 deducts 10% from the provider subtotal." :disabled="!providerFee.enabled" />
+          <AdminInput v-else v-model="providerFee.fixed" label="Fixed amount (₦)" inputmode="decimal" hint="Example: 500 deducts ₦500 per booking." :disabled="!providerFee.enabled" />
+          <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]"><p class="font-semibold">Provider preview</p><p class="mt-1 text-muted">{{ providerFeePreview }}</p><p class="mt-1 text-muted">A ₦20,000 subtotal would leave the provider with {{ formatNaira(providerFee.type === 'percent' ? 2000000 - Math.round(2000000 * (Number(providerFee.percent) || 0) / 100) : Math.max(0, 2000000 - Math.round(Number(providerFee.fixed || 0) * 100))) }} before the student service charge.</p></div>
+          <p class="text-[10px] leading-relaxed text-muted">The provider fee is stored per booking and is only shown in the admin and provider dashboard. Customers only see the separate service charge.</p>
+        </div>
+        <div class="mt-4 flex justify-end gap-2"><AdminButton variant="ghost" @click="providerFeeOpen = false">Cancel</AdminButton><AdminButton :loading="saving" @click="saveProviderFee">Save provider fee</AdminButton></div>
       </AdminModal>
       <AdminModal v-model:open="chargeOpen" title="Customer service charge" description="This is collected from the customer on top of the service subtotal at checkout. It is not the marketplace fee.">
         <div class="space-y-3">
