@@ -38,7 +38,7 @@ onMounted(async () => { await Promise.all([load(), loadPayouts()]); });
 
 <template>
   <div class="space-y-5">
-    <PageHeading title="Campus applications" subtitle="Ambassador pipeline for the Lagos pilot — UNILAG and CMUL." eyebrow="Growth">
+    <PageHeading title="Community applications" subtitle="Ambassador pipeline across local communities." eyebrow="Growth">
       <template #actions><AdminButton variant="outline" :loading="loading" @click="load"><RefreshCw class="h-3.5 w-3.5" /> Refresh</AdminButton></template>
     </PageHeading>
     <div class="flex gap-2">
@@ -66,7 +66,7 @@ onMounted(async () => { await Promise.all([load(), loadPayouts()]); });
     </div>
 
     <AdminModal v-model:open="payoutOpen" title="Record ambassador payout" :description="payoutApplication?.name || ''">
-      <div class="space-y-3"><AdminInput v-model="payoutAmount" label="Amount (₦)" type="number" min="1" /><AdminInput v-model="payoutNote" label="Note" placeholder="UNILAG activation bonus" /><div class="rounded-lg bg-raised p-3 text-[10px] text-muted">Code: <strong>{{ payoutApplication?.ambassadorCode }}</strong> · Owed: <strong>{{ formatNaira(payoutApplication?.owedKobo || 0) }}</strong></div><div class="flex justify-end gap-2"><AdminButton variant="ghost" @click="payoutOpen = false">Cancel</AdminButton><AdminButton :loading="payoutSaving" @click="savePayout">Record payout</AdminButton></div></div>
+      <div class="space-y-3"><AdminInput v-model="payoutAmount" label="Amount (₦)" type="number" min="1" /><AdminInput v-model="payoutNote" label="Note" placeholder="Activation bonus" /><div class="rounded-lg bg-raised p-3 text-[10px] text-muted">Code: <strong>{{ payoutApplication?.ambassadorCode }}</strong> · Owed: <strong>{{ formatNaira(payoutApplication?.owedKobo || 0) }}</strong></div><div class="flex justify-end gap-2"><AdminButton variant="ghost" @click="payoutOpen = false">Cancel</AdminButton><AdminButton :loading="payoutSaving" @click="savePayout">Record payout</AdminButton></div></div>
     </AdminModal>
   </div>
 </template>
