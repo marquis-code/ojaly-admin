@@ -11,6 +11,7 @@ export const adminApi = {
   supportConversations() { return unwrap<Record<string, any>[]>(http().get('/admin/support/conversations')); },
   supportThread(id: string) { return unwrap<Record<string, any>>(http().get(`/admin/support/conversations/${id}`)); },
   supportReply(id: string, body: string, attachments?: { url: string; type: 'image' | 'audio' }[]) { return unwrap<Record<string, any>>(http().post(`/admin/support/conversations/${id}/messages`, { body, attachments })); },
+  supportTyping(id: string) { return unwrap<Record<string, any>>(http().post(`/admin/support/conversations/${id}/typing`)); },
   closeSupport(id: string) { return unwrap<Record<string, any>>(http().post(`/admin/support/conversations/${id}/close`)); },
   fraudEvents(limit = 100) { return unwrap<Record<string, any>[]>(http().get('/admin/fraud/events', { params: { limit } })); },
   dashboard() { return unwrap<AdminDashboard>(http().get('/admin/dashboard')); },

@@ -16,6 +16,7 @@ const sending = ref(false);
 const minimized = ref(false);
 const previousUnread = ref(0);
 const notificationsEnabled = ref(typeof Notification !== 'undefined' && Notification.permission === 'granted');
+let lastTypingSent = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 const unreadTotal = computed(() => conversations.value.reduce((sum, item) => sum + Number(item.unreadAdmin || 0), 0));
 const openCount = computed(() => conversations.value.filter((item) => item.status === 'open').length);
@@ -45,6 +46,13 @@ async function open(id: string) {
   catch (error) { toast.error((error as Error).message); }
   finally { loading.value = false; }
 }
+function notifyTyping() {
+  if (!thread.value) return;
+  const now = Date.now();
+  if (now - lastTypingSent < 1800) return;
+  lastTypingSent = now;
+  void adminApi.supportTyping(thread.value.conversation.id).catch(() => undefined);
+}
 async function send() {
   if (!thread.value || !draft.value.trim()) return;
   sending.value = true;
@@ -61,7 +69,7 @@ function when(value: string) { return new Date(value).toLocaleTimeString('en-NG'
 function minimize() { minimized.value = true; }
 function restore() { minimized.value = false; }
 async function refreshAll() { await load(); if (selectedId.value) { try { thread.value = await adminApi.supportThread(selectedId.value); } catch { /* keep current */ } } }
-onMounted(async () => { await load(); timer = setInterval(() => { void refreshAll(); }, 10000); });
+onMounted(async () => { await load(); timer = setInterval(() => { void refreshAll(); }, 4000); });
 onBeforeUnmount(() => { if (timer) clearInterval(timer); });
 </script>
 
@@ -70,7 +78,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
     <header class="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-3 sm:px-5">
       <AdminLogo />
       <span class="hidden rounded-full bg-acid/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-acid sm:inline">Support console</span>
-      <div class="min-w-0 flex-1"><p class="truncate text-sm font-bold">Support inbox</p><p class="text-[10px] text-muted">{{ openCount }} open · {{ unreadTotal }} unread</p></div>
+      <div class="min-w-0 flex-1"><p v-if="thread?.typing?.visitor" class="text-[10px] font-semibold text-acid animate-pulse">Customer is typing…</p><p class="truncate text-sm font-bold">Support inbox</p><p class="text-[10px] text-muted">{{ openCount }} open · {{ unreadTotal }} unread</p></div>
       <button v-if="!notificationsEnabled" type="button" class="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[10px] font-bold text-muted hover:bg-raised" @click="enableNotifications"><Bell class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Alerts</span></button><AdminButton variant="outline" size="sm" :loading="loading" @click="load"><RefreshCw class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Refresh</span></AdminButton>
       <button type="button" class="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-muted hover:bg-raised" aria-label="Minimize support inbox" @click="minimize"><Minus class="h-4 w-4" /></button>
       <NuxtLink to="/" class="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[10px] font-bold text-muted hover:bg-raised"><ArrowLeft class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Admin</span></NuxtLink>
@@ -102,7 +110,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
               <p v-if="!thread.messages.length" class="py-16 text-center text-xs text-muted">No messages yet. Send the first reply.</p>
             </div>
           </div>
-          <div class="shrink-0 border-t border-line bg-surface p-3 sm:p-4"><div class="mx-auto flex max-w-3xl gap-2"><input v-model="draft" type="text" placeholder="Reply to the customer…" class="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-canvas px-3 text-xs" @keyup.enter="send"><button type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-acid text-white disabled:opacity-50" :disabled="sending || !draft.trim()" aria-label="Send reply" @click="send"><Send class="h-4 w-4" /></button></div><p class="mt-2 text-center text-[9px] text-muted">Replies appear in the customer’s website chat immediately.</p></div>
+          <div class="shrink-0 border-t border-line bg-surface p-3 sm:p-4"><div class="mx-auto flex max-w-3xl gap-2"><input v-model="draft" type="text" placeholder="Reply to the customer…" class="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-canvas px-3 text-xs" @input="notifyTyping" @keyup.enter="send"><button type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-acid text-white disabled:opacity-50" :disabled="sending || !draft.trim()" aria-label="Send reply" @click="send"><Send class="h-4 w-4" /></button></div><p class="mt-2 text-center text-[9px] text-muted">Replies appear in the customer’s website chat immediately.</p></div>
         </template>
         <div v-else class="flex flex-1 flex-col items-center justify-center p-8 text-center"><MessageCircle class="h-10 w-10 text-muted" /><p class="mt-4 font-display text-xl font-bold">Select a conversation</p><p class="mt-1 text-xs text-muted">Select a customer on the left to reply.</p></div>
       </section>
