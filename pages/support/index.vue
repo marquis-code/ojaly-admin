@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Bell, LifeBuoy, Maximize2, MessageCircle, Minus, RefreshCw, Send, X } from 'lucide-vue-next';
+import { ArrowLeft, Bell, ImagePlus, LifeBuoy, Loader2, Maximize2, MessageCircle, Mic, Minus, RefreshCw, Send, Square, X } from 'lucide-vue-next';
 import { adminApi } from '~/api/adminApi';
 import { useAdminAuthStore } from '~/stores/auth';
 import { formatDate } from '~/utils/format';
@@ -13,6 +13,11 @@ const thread = ref<Record<string, any> | null>(null);
 const draft = ref('');
 const loading = ref(false);
 const sending = ref(false);
+const attachment = ref<{ url: string; type: 'image' | 'audio' } | null>(null);
+const uploading = ref(false);
+const recording = ref(false);
+let recorder: MediaRecorder | null = null;
+let recordingStream: MediaStream | null = null;
 const minimized = ref(false);
 const previousUnread = ref(0);
 const notificationsEnabled = ref(typeof Notification !== 'undefined' && Notification.permission === 'granted');
@@ -54,12 +59,40 @@ function notifyTyping() {
   void adminApi.supportTyping(thread.value.conversation.id).catch(() => undefined);
 }
 async function send() {
-  if (!thread.value || !draft.value.trim()) return;
+  if (!thread.value || (!draft.value.trim() && !attachment.value)) return;
   sending.value = true;
-  try { await adminApi.supportReply(thread.value.conversation.id, draft.value.trim()); draft.value = ''; thread.value = await adminApi.supportThread(thread.value.conversation.id); await load(); }
+  try { await adminApi.supportReply(thread.value.conversation.id, draft.value.trim(), attachment.value ? [attachment.value] : undefined); draft.value = ''; attachment.value = null; thread.value = await adminApi.supportThread(thread.value.conversation.id); await load(); }
   catch (error) { toast.error((error as Error).message); }
   finally { sending.value = false; }
 }
+async function addImage(event: Event) {
+  const input = event.target as HTMLInputElement; const file = input.files?.[0]; input.value = '';
+  if (!file) return;
+  uploading.value = true;
+  try { attachment.value = await adminApi.uploadSupportAsset(file); }
+  catch (error) { toast.error((error as Error).message); }
+  finally { uploading.value = false; }
+}
+async function toggleRecording() {
+  if (recording.value) { recorder?.stop(); recording.value = false; return; }
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { toast.error('Voice notes are not supported in this browser.'); return; }
+  try {
+    recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks: Blob[] = [];
+    recorder = new MediaRecorder(recordingStream);
+    recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+    recorder.onstop = async () => {
+      recordingStream?.getTracks().forEach((track) => track.stop()); recording.value = false;
+      const blob = new Blob(chunks, { type: recorder?.mimeType || 'audio/webm' });
+      uploading.value = true;
+      try { attachment.value = await adminApi.uploadSupportAsset(new File([blob], 'voice-note.webm', { type: blob.type || 'audio/webm' })); }
+      catch (error) { toast.error((error as Error).message); }
+      finally { uploading.value = false; }
+    };
+    recorder.start(); recording.value = true;
+  } catch { toast.error('Allow microphone access to record a voice note.'); }
+}
+function backToList() { selectedId.value = ''; thread.value = null; }
 async function closeConversation() {
   if (!thread.value) return;
   try { await adminApi.closeSupport(thread.value.conversation.id); toast.success('Conversation closed.'); await load(); }
@@ -70,7 +103,7 @@ function minimize() { minimized.value = true; }
 function restore() { minimized.value = false; }
 async function refreshAll() { await load(); if (selectedId.value) { try { thread.value = await adminApi.supportThread(selectedId.value); } catch { /* keep current */ } } }
 onMounted(async () => { await load(); timer = setInterval(() => { void refreshAll(); }, 4000); });
-onBeforeUnmount(() => { if (timer) clearInterval(timer); });
+onBeforeUnmount(() => { if (timer) clearInterval(timer); if (recorder && recorder.state !== 'inactive') recorder.stop(); recordingStream?.getTracks().forEach((track) => track.stop()); });
 </script>
 
 <template>
@@ -86,7 +119,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
     </header>
 
     <main v-if="!minimized" class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[360px_1fr]">
-      <section class="flex min-h-0 flex-col border-r border-line bg-surface">
+      <section class="min-h-0 flex-col border-r border-line bg-surface" :class="selectedId ? 'hidden lg:flex' : 'flex'">
         <div class="flex h-12 shrink-0 items-center justify-between border-b border-line px-4"><p class="text-xs font-bold">Conversations</p><span class="text-[10px] text-muted">{{ conversations.length }}</span></div>
         <div class="min-h-0 flex-1 overflow-y-auto">
           <button v-for="item in conversations" :key="item.id" type="button" class="w-full border-b border-line p-4 text-left transition hover:bg-raised/50" :class="selectedId === item.id ? 'bg-raised/70' : ''" @click="open(item.id)">
@@ -98,9 +131,10 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
         </div>
       </section>
 
-      <section class="flex min-h-0 flex-col bg-canvas">
+      <section class="min-h-0 flex-1 flex-col bg-canvas" :class="selectedId ? 'flex' : 'hidden lg:flex'">
         <template v-if="thread">
-          <div class="flex h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-4 sm:px-5">
+          <div class="flex h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-3 sm:px-5">
+            <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg border border-line lg:hidden" aria-label="Back to conversations" @click="backToList"><ArrowLeft class="h-4 w-4" /></button>
             <div class="min-w-0"><p class="truncate text-sm font-bold">{{ thread.conversation.name }}</p><p class="mt-0.5 truncate text-[10px] text-muted">{{ thread.conversation.email }} · {{ thread.conversation.phone }}</p></div>
             <div class="flex gap-2"><a :href="`mailto:${thread.conversation.email}`" class="rounded-lg border border-line px-2.5 py-1.5 text-[10px] font-bold">Email</a><button type="button" class="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[10px] font-bold text-danger" @click="closeConversation"><X class="h-3 w-3" /> Close</button></div>
           </div>
@@ -110,7 +144,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
               <p v-if="!thread.messages.length" class="py-16 text-center text-xs text-muted">No messages yet. Send the first reply.</p>
             </div>
           </div>
-          <div class="shrink-0 border-t border-line bg-surface p-3 sm:p-4"><div class="mx-auto flex max-w-3xl gap-2"><input v-model="draft" type="text" placeholder="Reply to the customer…" class="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-canvas px-3 text-xs" @input="notifyTyping" @keyup.enter="send"><button type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-acid text-white disabled:opacity-50" :disabled="sending || !draft.trim()" aria-label="Send reply" @click="send"><Send class="h-4 w-4" /></button></div><p class="mt-2 text-center text-[9px] text-muted">Replies appear in the customer’s website chat immediately.</p></div>
+          <div class="shrink-0 border-t border-line bg-surface p-3 sm:p-4"><p v-if="uploading || sending" class="mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-lg bg-acid/10 px-3 py-2 text-[10px] font-semibold text-acid"><Loader2 class="h-3.5 w-3.5 animate-spin" /> {{ uploading ? 'Uploading attachment…' : 'Sending reply…' }}</p><div v-if="attachment" class="mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-xl bg-raised p-2"><img v-if="attachment.type === 'image'" :src="attachment.url" alt="Attachment preview" class="h-10 w-10 rounded-lg object-cover"><audio v-else :src="attachment.url" controls class="h-9 min-w-0 flex-1"></audio><button type="button" class="ml-auto text-muted" aria-label="Remove attachment" @click="attachment = null"><X class="h-4 w-4" /></button></div><div class="mx-auto flex max-w-3xl gap-1.5"><label class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-line text-muted hover:bg-raised" aria-label="Attach image"><ImagePlus class="h-4 w-4" /><input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" :disabled="uploading" @change="addImage"></label><button type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line" :class="recording ? 'bg-danger text-white' : 'text-muted hover:bg-raised'" :disabled="uploading" :aria-label="recording ? 'Stop recording' : 'Record voice note'" @click="toggleRecording"><Square v-if="recording" class="h-4 w-4" /><Mic v-else class="h-4 w-4" /></button><input v-model="draft" type="text" placeholder="Reply to the customer…" class="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-canvas px-3 text-xs" @input="notifyTyping" @keyup.enter="send"><button type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-acid text-white disabled:opacity-50" :disabled="sending || uploading || (!draft.trim() && !attachment)" aria-label="Send reply" @click="send"><Loader2 v-if="sending" class="h-4 w-4 animate-spin" /><Send v-else class="h-4 w-4" /></button></div><p v-if="recording" class="mt-2 text-center text-[10px] font-semibold text-danger">Recording… tap the square to attach the voice note.</p><p class="mt-2 text-center text-[9px] text-muted">Replies appear in the customer’s website chat immediately.</p></div>
         </template>
         <div v-else class="flex flex-1 flex-col items-center justify-center p-8 text-center"><MessageCircle class="h-10 w-10 text-muted" /><p class="mt-4 font-display text-xl font-bold">Select a conversation</p><p class="mt-1 text-xs text-muted">Select a customer on the left to reply.</p></div>
       </section>

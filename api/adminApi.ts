@@ -12,6 +12,14 @@ export const adminApi = {
   supportThread(id: string) { return unwrap<Record<string, any>>(http().get(`/admin/support/conversations/${id}`)); },
   supportReply(id: string, body: string, attachments?: { url: string; type: 'image' | 'audio' }[]) { return unwrap<Record<string, any>>(http().post(`/admin/support/conversations/${id}/messages`, { body, attachments })); },
   supportTyping(id: string) { return unwrap<Record<string, any>>(http().post(`/admin/support/conversations/${id}/typing`)); },
+  uploadSupportAsset(file: File) {
+    const isImage = file.type.startsWith('image/');
+    const isAudio = file.type.startsWith('audio/');
+    if (!isImage && !isAudio) throw new Error('Attach an image or a voice note.');
+    const form = new FormData(); form.append('file', file);
+    return unwrap<{ url: string; type: 'image' | 'audio' }>(http().post('/uploads/public/support', form));
+  },
+
   closeSupport(id: string) { return unwrap<Record<string, any>>(http().post(`/admin/support/conversations/${id}/close`)); },
   fraudEvents(limit = 100) { return unwrap<Record<string, any>[]>(http().get('/admin/fraud/events', { params: { limit } })); },
   dashboard() { return unwrap<AdminDashboard>(http().get('/admin/dashboard')); },
