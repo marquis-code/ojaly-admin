@@ -33,6 +33,8 @@ export const adminApi = {
   suspendBusiness(id: string, payload: { suspended: boolean; reason?: string }) { return unwrap(http().patch(`/admin/businesses/${id}/suspend`, payload)); },
   updateServiceCharge(id: string, payload: { enabled: boolean; type: 'percent' | 'fixed'; percent?: number; fixedKobo?: number }) { return unwrap(http().patch(`/admin/businesses/${id}/service-charge`, payload)); },
   updateProviderFee(id: string, payload: { enabled: boolean; type: 'percent' | 'fixed'; percent?: number; fixedKobo?: number }) { return unwrap(http().patch(`/admin/businesses/${id}/provider-fee`, payload)); },
+  platformCampaign() { return unwrap<Record<string, any>>(http().get('/admin/promotions/platform')); },
+  updatePlatformCampaign(payload: Record<string, unknown>) { return unwrap<Record<string, any>>(http().patch('/admin/promotions/platform', payload)); },
   newCustomerPromotion() { return unwrap<Record<string, any>>(http().get('/admin/promotions/new-customer')); },
   updateNewCustomerPromotion(payload: { enabled: boolean; percentOff: number; maxDiscountKobo?: number }) { return unwrap<Record<string, any>>(http().patch('/admin/promotions/new-customer', payload)); },
   plans() { return unwrap<AdminPlan[]>(http().get('/admin/plans')); },
