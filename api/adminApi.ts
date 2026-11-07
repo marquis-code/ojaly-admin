@@ -36,7 +36,7 @@ export const adminApi = {
   platformCampaign() { return unwrap<Record<string, any>>(http().get('/admin/promotions/platform')); },
   updatePlatformCampaign(payload: Record<string, unknown>) { return unwrap<Record<string, any>>(http().patch('/admin/promotions/platform', payload)); },
   newCustomerPromotion() { return unwrap<Record<string, any>>(http().get('/admin/promotions/new-customer')); },
-  updateNewCustomerPromotion(payload: { enabled: boolean; percentOff: number; maxDiscountKobo?: number }) { return unwrap<Record<string, any>>(http().patch('/admin/promotions/new-customer', payload)); },
+  updateNewCustomerPromotion(payload: { enabled: boolean; percentOff: number; maxDiscountKobo?: number; startsAt?: string | null; endsAt?: string | null }) { return unwrap<Record<string, any>>(http().patch('/admin/promotions/new-customer', payload)); },
   plans() { return unwrap<AdminPlan[]>(http().get('/admin/plans')); },
   createPlan(payload: Record<string, unknown>) { return unwrap(http().post('/admin/plans', payload)); },
   updatePlan(key: string, payload: Record<string, unknown>) { return unwrap(http().patch(`/admin/plans/${key}`, payload)); },
