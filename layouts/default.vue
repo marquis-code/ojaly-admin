@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Activity, ArrowUpRight, Building2, CreditCard, FileClock, Gift, LayoutDashboard, LogOut, Menu, GraduationCap, Megaphone, MessageCircle, Store, Search, ShieldCheck, Users, X, Zap } from 'lucide-vue-next';
+import { Activity, ArrowUpRight, Building2, CreditCard, FileClock, Gift, LayoutDashboard, ShieldAlert, LogOut, Menu, GraduationCap, Megaphone, MessageCircle, Store, Search, ShieldCheck, Users, X, Zap } from 'lucide-vue-next';
 const auth = useAdminAuthStore();
 const route = useRoute();
 const router = useRouter();
 const open = ref(false);
 const confirmLogout = ref(false);
 const groups = [
-  { label: 'Observe', links: [{ to: '/', label: 'Overview', icon: LayoutDashboard }, { to: '/audit', label: 'Audit log', icon: FileClock }] },
+  { label: 'Observe', links: [{ to: '/', label: 'Overview', icon: LayoutDashboard }, { to: '/fraud', label: 'Fraud & risk', icon: ShieldAlert }, { to: '/audit', label: 'Audit log', icon: FileClock }] },
   { label: 'Network', links: [{ to: '/users', label: 'Users', icon: Users }, { to: '/businesses', label: 'Businesses', icon: Building2 }] },
   { label: 'Growth', links: [{ to: '/marketplace', label: 'Marketplace', icon: Store }, { to: '/promotions', label: 'Promotions', icon: Megaphone }, { to: '/campus', label: 'Campus applications', icon: GraduationCap }] },
   { label: 'Revenue', links: [{ to: '/payments', label: 'Payments', icon: CreditCard }, { to: '/plans', label: 'Plans & coupons', icon: Zap }, { to: '/affiliates', label: 'Affiliates & payouts', icon: Gift }] },

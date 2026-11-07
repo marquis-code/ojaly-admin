@@ -7,6 +7,8 @@ export const adminApi = {
   },
   me() { return unwrap<{ user: AdminUser; activeBusinessId: string | null }>(http().get('/auth/me')); },
   logout(refreshToken?: string) { return unwrap<{ loggedOut: boolean }>(http().post('/auth/logout', { refreshToken })); },
+  fraudStats() { return unwrap<Record<string, any>>(http().get('/admin/fraud/stats')); },
+  fraudEvents(limit = 100) { return unwrap<Record<string, any>[]>(http().get('/admin/fraud/events', { params: { limit } })); },
   dashboard() { return unwrap<AdminDashboard>(http().get('/admin/dashboard')); },
   users(params: Record<string, unknown>) { return unwrap<Paginated<AdminUser>>(http().get('/admin/users', { params })); },
   user(id: string) { return unwrap<{ user: AdminUser; memberships: Record<string, unknown>[]; audit: AdminAuditLog[] }>(http().get(`/admin/users/${id}`)); },
