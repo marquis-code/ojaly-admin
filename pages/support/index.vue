@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, LifeBuoy, Maximize2, MessageCircle, Minus, RefreshCw, Send, X } from 'lucide-vue-next';
+import { ArrowLeft, Bell, LifeBuoy, Maximize2, MessageCircle, Minus, RefreshCw, Send, X } from 'lucide-vue-next';
 import { adminApi } from '~/api/adminApi';
 import { useAdminAuthStore } from '~/stores/auth';
 import { formatDate } from '~/utils/format';
@@ -14,13 +14,30 @@ const draft = ref('');
 const loading = ref(false);
 const sending = ref(false);
 const minimized = ref(false);
+const previousUnread = ref(0);
+const notificationsEnabled = ref(typeof Notification !== 'undefined' && Notification.permission === 'granted');
 let timer: ReturnType<typeof setInterval> | null = null;
 const unreadTotal = computed(() => conversations.value.reduce((sum, item) => sum + Number(item.unreadAdmin || 0), 0));
 const openCount = computed(() => conversations.value.filter((item) => item.status === 'open').length);
 const latestConversation = computed(() => conversations.value[0] || null);
 async function load() {
-  try { conversations.value = await adminApi.supportConversations(); if (!selectedId.value && conversations.value[0]) await open(conversations.value[0].id); }
-  catch (error) { toast.error((error as Error).message); }
+  try {
+    conversations.value = await adminApi.supportConversations();
+    const unread = conversations.value.reduce((sum, item) => sum + Number(item.unreadAdmin || 0), 0);
+    if (previousUnread.value > 0 && unread > previousUnread.value && notificationsEnabled.value && typeof Notification !== 'undefined') {
+      const latest = conversations.value.find((item) => Number(item.unreadAdmin) > 0);
+      new Notification('New Ojaly support message', { body: latest ? `${latest.name}: ${latest.lastMessage || 'New message'}` : 'A customer is waiting for a reply.', tag: 'ojaly-support' });
+    }
+    previousUnread.value = unread;
+    if (typeof document !== 'undefined') document.title = unread ? `(${unread}) Support inbox · Ojaly Ops` : 'Support inbox · Ojaly Ops';
+    if (!selectedId.value && conversations.value[0]) await open(conversations.value[0].id);
+  } catch (error) { toast.error((error as Error).message); }
+}
+async function enableNotifications() {
+  if (typeof Notification === 'undefined') { toast.error('This browser does not support notifications.'); return; }
+  const permission = await Notification.requestPermission();
+  notificationsEnabled.value = permission === 'granted';
+  if (!notificationsEnabled.value) toast.info('Notifications were not enabled.');
 }
 async function open(id: string) {
   selectedId.value = id; loading.value = true;
@@ -43,7 +60,8 @@ async function closeConversation() {
 function when(value: string) { return new Date(value).toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' }); }
 function minimize() { minimized.value = true; }
 function restore() { minimized.value = false; }
-onMounted(async () => { await load(); timer = setInterval(() => { void load(); }, 10000); });
+async function refreshAll() { await load(); if (selectedId.value) { try { thread.value = await adminApi.supportThread(selectedId.value); } catch { /* keep current */ } } }
+onMounted(async () => { await load(); timer = setInterval(() => { void refreshAll(); }, 10000); });
 onBeforeUnmount(() => { if (timer) clearInterval(timer); });
 </script>
 
@@ -53,7 +71,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
       <AdminLogo />
       <span class="hidden rounded-full bg-acid/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-acid sm:inline">Support console</span>
       <div class="min-w-0 flex-1"><p class="truncate text-sm font-bold">Support inbox</p><p class="text-[10px] text-muted">{{ openCount }} open · {{ unreadTotal }} unread</p></div>
-      <AdminButton variant="outline" size="sm" :loading="loading" @click="load"><RefreshCw class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Refresh</span></AdminButton>
+      <button v-if="!notificationsEnabled" type="button" class="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[10px] font-bold text-muted hover:bg-raised" @click="enableNotifications"><Bell class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Alerts</span></button><AdminButton variant="outline" size="sm" :loading="loading" @click="load"><RefreshCw class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Refresh</span></AdminButton>
       <button type="button" class="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-muted hover:bg-raised" aria-label="Minimize support inbox" @click="minimize"><Minus class="h-4 w-4" /></button>
       <NuxtLink to="/" class="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[10px] font-bold text-muted hover:bg-raised"><ArrowLeft class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Admin</span></NuxtLink>
       <div class="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-white">{{ auth.user?.name?.slice(0, 2).toUpperCase() }}</div>
