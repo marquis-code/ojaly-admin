@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Activity, ArrowUpRight, Building2, CreditCard, FileClock, Gift, LayoutDashboard, ShieldAlert, LogOut, Menu, GraduationCap, Megaphone, MessageCircle, Store, Search, ShieldCheck, Users, X, Zap } from 'lucide-vue-next';
+import { Activity, ArrowUpRight, Building2, CreditCard, FileClock, Gift, LayoutDashboard, LifeBuoy, ShieldAlert, LogOut, Menu, GraduationCap, Megaphone, MessageCircle, Store, Search, ShieldCheck, Users, X, Zap } from 'lucide-vue-next';
 const auth = useAdminAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -10,7 +10,7 @@ const groups = [
   { label: 'Network', links: [{ to: '/users', label: 'Users', icon: Users }, { to: '/businesses', label: 'Businesses', icon: Building2 }] },
   { label: 'Growth', links: [{ to: '/marketplace', label: 'Marketplace', icon: Store }, { to: '/promotions', label: 'Promotions', icon: Megaphone }, { to: '/campus', label: 'Campus applications', icon: GraduationCap }] },
   { label: 'Revenue', links: [{ to: '/payments', label: 'Payments', icon: CreditCard }, { to: '/plans', label: 'Plans & coupons', icon: Zap }, { to: '/affiliates', label: 'Affiliates & payouts', icon: Gift }] },
-  { label: 'Operations', links: [{ to: '/whatsapp', label: 'WhatsApp health', icon: MessageCircle }] },
+  { label: 'Operations', links: [{ to: '/support', label: 'Support inbox', icon: LifeBuoy }, { to: '/whatsapp', label: 'WhatsApp health', icon: MessageCircle }] },
 ];
 const active = (to: string) => to === '/' ? route.path === '/' : route.path.startsWith(to);
 function requestLogout() { confirmLogout.value = true; }
