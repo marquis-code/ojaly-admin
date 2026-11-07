@@ -18,7 +18,7 @@ function openPayout(application: import('~/types').AdminCampusApplication) {
 async function savePayout() {
   if (!payoutApplication.value) return;
   try {
-    await create(payoutApplication.value.id, Math.round(Number(payoutAmount.value) * 100), payoutNote.value);
+    await create(payoutApplication.value.id, Math.round(moneyNumber(payoutAmount.value) * 100), payoutNote.value);
     toast.success('Payout recorded.');
     payoutOpen.value = false;
     await Promise.all([load(), loadPayouts()]);

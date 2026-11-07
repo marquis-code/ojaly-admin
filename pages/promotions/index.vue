@@ -17,7 +17,7 @@ async function load() {
 async function save() {
   saving.value = true;
   try {
-    await adminApi.updateNewCustomerPromotion({ enabled: form.enabled, percentOff: Number(form.percentOff) || 0, maxDiscountKobo: Math.round(Number(form.maxDiscount || 0) * 100) });
+    await adminApi.updateNewCustomerPromotion({ enabled: form.enabled, percentOff: Number(form.percentOff) || 0, maxDiscountKobo: Math.round(moneyNumber(form.maxDiscount) * 100) });
     toast.success('New customer promotion saved.'); await load();
   } catch (error) { toast.error((error as Error).message); }
   finally { saving.value = false; }
@@ -38,7 +38,7 @@ onMounted(load);
           <label class="flex items-center gap-2 text-sm font-semibold"><input v-model="form.enabled" type="checkbox" class="rounded" :disabled="!auth.isSuperAdmin"> Enable new customer promotion</label>
           <AdminInput v-model.number="form.percentOff" label="Discount percentage" type="number" min="0" max="100" hint="Example: 10 gives a new customer 10% off their first service booking." :disabled="!auth.isSuperAdmin" />
           <AdminInput v-model="form.maxDiscount" label="Maximum discount (optional, ₦)" inputmode="decimal" hint="Leave blank for no cap." :disabled="!auth.isSuperAdmin" />
-          <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]"><p class="font-semibold">Example</p><p class="mt-1 text-muted">A ₦20,000 first booking with {{ form.percentOff || 0 }}% off becomes {{ formatNaira(2000000 - Math.min(2000000 * (Number(form.percentOff) || 0) / 100, Number(form.maxDiscount || 0) * 100 || Infinity)) }}.</p></div>
+          <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]"><p class="font-semibold">Example</p><p class="mt-1 text-muted">A ₦20,000 first booking with {{ form.percentOff || 0 }}% off becomes {{ formatNaira(2000000 - Math.min(2000000 * (Number(form.percentOff) || 0) / 100, moneyNumber(form.maxDiscount) * 100 || Infinity)) }}.</p></div>
           <AdminButton v-if="auth.isSuperAdmin" :loading="saving" @click="save"><Check class="h-3.5 w-3.5" /> Save promotion</AdminButton>
         </div>
       </div>

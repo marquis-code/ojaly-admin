@@ -26,7 +26,7 @@ const providerFeeOpen = ref(false);
 const providerFee = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
 const providerFeePreview = computed(() => {
   if (!providerFee.enabled) return 'Disabled — the provider keeps the full service subtotal.';
-  return providerFee.type === 'percent' ? `${providerFee.percent || 0}% deducted from the provider subtotal.` : `₦${Number(providerFee.fixed || 0).toLocaleString('en-NG')} deducted per booking.`;
+  return providerFee.type === 'percent' ? `${providerFee.percent || 0}% deducted from the provider subtotal.` : `₦${moneyNumber(providerFee.fixed).toLocaleString('en-NG')} deducted per booking.`;
 });
 function openProviderFee() {
   providerFee.enabled = Boolean(data.value?.business?.providerFeeEnabled);
@@ -40,7 +40,7 @@ async function saveProviderFee() {
   try {
     await persistProviderFee(String(route.params.id), {
       enabled: providerFee.enabled, type: providerFee.type, percent: Number(providerFee.percent) || 0,
-      fixedKobo: Math.round(Number(providerFee.fixed || 0) * 100),
+      fixedKobo: Math.round(moneyNumber(providerFee.fixed) * 100),
     });
     toast.success('Provider fee updated.');
     providerFeeOpen.value = false;
@@ -50,7 +50,7 @@ async function saveProviderFee() {
 }
 const chargePreview = computed(() => {
   if (!charge.enabled) return 'Disabled — customers pay the service price only.';
-  return charge.type === 'percent' ? `${charge.percent || 0}% added to the service subtotal.` : `₦${Number(charge.fixed || 0).toLocaleString('en-NG')} added per booking.`;
+  return charge.type === 'percent' ? `${charge.percent || 0}% added to the service subtotal.` : `₦${moneyNumber(charge.fixed).toLocaleString('en-NG')} added per booking.`;
 });
 function openCharge() {
   charge.enabled = Boolean(data.value?.business?.serviceChargeEnabled);
@@ -64,7 +64,7 @@ async function saveCharge() {
   try {
     await persistServiceCharge(String(route.params.id), {
       enabled: charge.enabled, type: charge.type, percent: Number(charge.percent) || 0,
-      fixedKobo: Math.round(Number(charge.fixed || 0) * 100),
+      fixedKobo: Math.round(moneyNumber(charge.fixed) * 100),
     });
     toast.success('Service charge updated.');
     chargeOpen.value = false;
@@ -95,7 +95,7 @@ async function toggleSuspend() {
 }
 async function grantCoupon() {
   saving.value = true;
-  try { await persistCoupon({ code: coupon.code, percentOff: Number(coupon.percentOff), amountOffKobo: coupon.amountOff ? Math.round(Number(coupon.amountOff) * 100) : 0, expiresAt: coupon.expiresAt || undefined, grantedToBusinessId: String(route.params.id) }); toast.success('Coupon granted to this business.'); couponOpen.value = false; await load(); }
+  try { await persistCoupon({ code: coupon.code, percentOff: Number(coupon.percentOff), amountOffKobo: coupon.amountOff ? Math.round(moneyNumber(coupon.amountOff) * 100) : 0, expiresAt: coupon.expiresAt || undefined, grantedToBusinessId: String(route.params.id) }); toast.success('Coupon granted to this business.'); couponOpen.value = false; await load(); }
   catch (error) { toast.error((error as Error).message); }
 }
 async function startImpersonation() {

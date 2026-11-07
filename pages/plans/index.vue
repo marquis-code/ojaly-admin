@@ -3,6 +3,7 @@ import { Check, Pencil, Plus, RefreshCw, Ticket, Trash2 } from 'lucide-vue-next'
 import { useAdminAuthStore } from '~/stores/auth';
 import type { AdminPlan } from '~/types';
 import { formatDate, formatNaira, titleCase } from '~/utils/format';
+import { moneyNumber } from '~/utils/money';
 useSeoMeta({ title: 'Plans & coupons' });
 const toast = useAdminToast();
 const auth = useAdminAuthStore();
@@ -33,7 +34,7 @@ function openPlan(plan?: AdminPlan) {
 async function savePlan() {
   const payload = {
     key: form.key, name: form.name, description: form.description,
-    priceMonthlyKobo: Math.round(Number(form.monthly || 0) * 100), priceYearlyKobo: Math.round(Number(form.yearly || 0) * 100),
+    priceMonthlyKobo: Math.round(moneyNumber(form.monthly) * 100), priceYearlyKobo: Math.round(moneyNumber(form.yearly) * 100),
     trialDays: Number(form.trialDays), trialMilestoneOrders: Number(form.milestone), isActive: form.active, isDefault: form.default, isTrialPlan: form.trial,
     paystackPlanCodeMonthly: form.monthlyCode || null, paystackPlanCodeYearly: form.yearlyCode || null,
     marketingFeatures: form.features.split(',').map((f) => f.trim()).filter(Boolean),
@@ -50,7 +51,7 @@ async function createCoupon() {
   if (!coupon.code) { toast.error('Enter a coupon code.'); return; }
   saving.value = true;
   try {
-    await persistCoupon({ code: coupon.code, percentOff: Number(coupon.percentOff), amountOffKobo: coupon.amountOff ? Math.round(Number(coupon.amountOff) * 100) : 0, maxRedemptions: coupon.maxRedemptions ? Number(coupon.maxRedemptions) : null, expiresAt: coupon.expiresAt || undefined, grantedToBusinessId: coupon.businessId || undefined });
+    await persistCoupon({ code: coupon.code, percentOff: Number(coupon.percentOff), amountOffKobo: coupon.amountOff ? Math.round(moneyNumber(coupon.amountOff) * 100) : 0, maxRedemptions: coupon.maxRedemptions ? Number(coupon.maxRedemptions) : null, expiresAt: coupon.expiresAt || undefined, grantedToBusinessId: coupon.businessId || undefined });
     toast.success('Coupon created.'); couponOpen.value = false; await load();
     Object.assign(coupon, { code: '', percentOff: 20, amountOff: '', maxRedemptions: '', expiresAt: '', businessId: '' });
   } catch (error) { toast.error((error as Error).message); }
