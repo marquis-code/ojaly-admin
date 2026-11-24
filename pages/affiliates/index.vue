@@ -43,7 +43,7 @@ onMounted(reload);
 <template>
   <div class="space-y-5">
     <PageHeading title="Affiliates & payouts" subtitle="Who is bringing businesses to Ojaly, what they earned and what needs to be paid." eyebrow="Growth">
-      <template #actions><AdminButton variant="outline" :loading="loading" @click="reload"><RefreshCw class="h-3.5 w-3.5" /> Refresh</AdminButton><AdminButton variant="outline" :loading="exporting === 'affiliates'" @click="exportRows('affiliates')"><Download class="h-3.5 w-3.5" /> Export affiliates</AdminButton><AdminButton variant="outline" :loading="exporting === 'affiliate-payouts'" @click="exportRows('affiliate-payouts')"><Download class="h-3.5 w-3.5" /> Export payouts</AdminButton></template>
+      <template #actions><NuxtLink to="/payouts" class="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-acid/40 bg-acid/10 px-3 text-xs font-bold text-acid hover:bg-acid hover:text-white transition"><Banknote class="h-3.5 w-3.5" /> Payouts console</NuxtLink><AdminButton variant="outline" :loading="loading" @click="reload"><RefreshCw class="h-3.5 w-3.5" /> Refresh</AdminButton><AdminButton variant="outline" :loading="exporting === 'affiliates'" @click="exportRows('affiliates')"><Download class="h-3.5 w-3.5" /> Export affiliates</AdminButton><AdminButton variant="outline" :loading="exporting === 'affiliate-payouts'" @click="exportRows('affiliate-payouts')"><Download class="h-3.5 w-3.5" /> Export payouts</AdminButton></template>
     </PageHeading>
 
     <div v-if="stats" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
