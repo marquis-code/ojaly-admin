@@ -21,7 +21,7 @@ const suspendReason = ref('');
 const note = ref('');
 const coupon = reactive({ code: '', percentOff: 20, amountOff: '', expiresAt: '' });
 const chargeOpen = ref(false);
-const charge = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
+const charge = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '', waitlistEnabled: true });
 const providerFeeOpen = ref(false);
 const providerFee = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
 const providerFeePreview = computed(() => {
@@ -57,6 +57,7 @@ function openCharge() {
   charge.type = data.value?.business?.serviceChargeType || 'percent';
   charge.percent = data.value?.business?.serviceChargePercent ?? 5;
   charge.fixed = data.value?.business?.serviceChargeFixedKobo ? String(data.value.business.serviceChargeFixedKobo / 100) : '';
+  charge.waitlistEnabled = data.value?.business?.serviceChargeWaitlistEnabled !== false;
   chargeOpen.value = true;
 }
 async function saveCharge() {
@@ -65,6 +66,7 @@ async function saveCharge() {
     await persistServiceCharge(String(route.params.id), {
       enabled: charge.enabled, type: charge.type, percent: Number(charge.percent) || 0,
       fixedKobo: Math.round(moneyNumber(charge.fixed) * 100),
+      waitlistEnabled: charge.waitlistEnabled,
     });
     toast.success('Service charge updated.');
     chargeOpen.value = false;
@@ -133,7 +135,7 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="flex items-start gap-3">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-raised"><Percent class="h-4 w-4" /></div>
-            <div><p class="text-xs font-bold">Customer service charge</p><p class="mt-1 text-[11px] text-muted">Added to the service subtotal at booking checkout.</p><p class="mt-2 text-sm font-bold">{{ data.business.serviceChargeEnabled ? (data.business.serviceChargeType === 'fixed' ? formatNaira(data.business.serviceChargeFixedKobo) : `${data.business.serviceChargePercent}%`) : 'Not enabled' }}</p></div>
+            <div><p class="text-xs font-bold">Customer service charge</p><p class="mt-1 text-[11px] text-muted">Added to the service subtotal at booking checkout{{ data.business.serviceChargeWaitlistEnabled !== false ? ' and waitlist payments' : '' }}.</p><p class="mt-2 text-sm font-bold">{{ data.business.serviceChargeEnabled ? (data.business.serviceChargeType === 'fixed' ? formatNaira(data.business.serviceChargeFixedKobo) : `${data.business.serviceChargePercent}%`) : 'Not enabled' }}</p></div>
           </div>
           <AdminButton v-if="auth.isSuperAdmin" variant="outline" @click="openCharge">Configure</AdminButton>
         </div>
@@ -191,6 +193,13 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
           <AdminSelect v-model="charge.type" label="Charge type" :options="[{ value: 'percent', label: 'Percentage of service subtotal' }, { value: 'fixed', label: 'Fixed amount per booking' }]" :disabled="!charge.enabled" />
           <AdminInput v-if="charge.type === 'percent'" v-model.number="charge.percent" label="Percentage" type="number" min="0" max="100" hint="Example: 5 adds 5% to the service price." :disabled="!charge.enabled" />
           <AdminInput v-else v-model="charge.fixed" label="Fixed amount (₦)" inputmode="decimal" hint="Example: 500 adds ₦500 per booking." :disabled="!charge.enabled" />
+          <div class="space-y-1 rounded-lg border border-line bg-raised/30 p-3">
+            <label class="flex items-center gap-2 text-xs font-semibold">
+              <input v-model="charge.waitlistEnabled" type="checkbox" class="rounded" :disabled="!charge.enabled">
+              Bill service charge on waitlist payments
+            </label>
+            <p class="text-[10px] text-muted">When customers pay to join the waitlist, charge the same customer-facing fee as normal booking checkout.</p>
+          </div>
           <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]"><p class="font-semibold">Customer preview</p><p class="mt-1 text-muted">{{ chargePreview }}</p><p class="mt-1 text-muted">A ₦20,000 service would become {{ formatNaira(charge.type === 'percent' ? 2000000 + Math.round(2000000 * (Number(charge.percent) || 0) / 100) : 2000000 + Math.round(Number(charge.fixed || 0) * 100)) }}.</p></div>
           <p class="text-[10px] leading-relaxed text-muted">The charge is calculated server-side when the booking is created. Existing bookings keep the charge that applied when they were booked.</p>
         </div>

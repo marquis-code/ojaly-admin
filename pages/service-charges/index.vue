@@ -11,7 +11,7 @@ const saving = ref(false);
 const search = ref('');
 const open = ref(false);
 const selected = ref<AdminBusiness | null>(null);
-const form = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 0, fixed: '' });
+const form = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 0, fixed: '', waitlistEnabled: true });
 async function load() {
   loading.value = true;
   try { const result = await adminApi.businesses({ page: 1, limit: 100, search: search.value.trim() || undefined }); items.value = result.items; }
@@ -24,13 +24,20 @@ function configure(business: AdminBusiness) {
   form.type = business.serviceChargeType || 'percent';
   form.percent = Number(business.serviceChargePercent || 0);
   form.fixed = business.serviceChargeFixedKobo ? String(business.serviceChargeFixedKobo / 100) : '';
+  form.waitlistEnabled = business.serviceChargeWaitlistEnabled !== false;
   open.value = true;
 }
 async function save() {
   if (!selected.value) return;
   saving.value = true;
   try {
-    await adminApi.updateServiceCharge(selected.value.id, { enabled: form.enabled, type: form.type, percent: Number(form.percent) || 0, fixedKobo: Math.round(Number(form.fixed.replace(/[^0-9.]/g, '')) * 100) || 0 });
+    await adminApi.updateServiceCharge(selected.value.id, {
+      enabled: form.enabled,
+      type: form.type,
+      percent: Number(form.percent) || 0,
+      fixedKobo: Math.round(Number(form.fixed.replace(/[^0-9.]/g, '')) * 100) || 0,
+      waitlistEnabled: form.waitlistEnabled,
+    });
     toast.success('Service charge updated.');
     open.value = false; await load();
   } catch (error) { toast.error((error as Error).message); }
@@ -56,7 +63,7 @@ onMounted(load);
       <template #body>
         <tr v-for="business in items" :key="business.id" class="border-b border-line last:border-0 hover:bg-raised/30">
           <td class="px-4 py-3"><p class="text-xs font-bold">{{ business.name }}</p><p class="text-[10px] text-muted">/s/{{ business.slug }} · {{ business.category }}</p></td>
-          <td class="px-4 py-3"><p class="text-[11px] font-bold">{{ summary(business) }}</p><p class="text-[9px] text-muted">{{ business.serviceChargeEnabled ? (business.serviceChargeType === 'fixed' ? 'Fixed per booking' : 'Added to service subtotal') : 'Customers pay the service price only' }}</p></td>
+          <td class="px-4 py-3"><p class="text-[11px] font-bold">{{ summary(business) }}</p><p class="text-[9px] text-muted">{{ business.serviceChargeEnabled ? ((business.serviceChargeType === 'fixed' ? 'Fixed per booking' : 'Added to service subtotal') + (business.serviceChargeWaitlistEnabled !== false ? ' · Waitlist included' : '')) : 'Customers pay the service price only' }}</p></td>
           <td class="px-4 py-3"><AdminBadge :variant="business.serviceChargeEnabled ? 'success' : 'neutral'">{{ business.serviceChargeEnabled ? 'Enabled' : 'Disabled' }}</AdminBadge></td>
           <td class="px-4 py-3 text-right"><AdminButton size="sm" variant="outline" @click="configure(business)"><Percent class="h-3.5 w-3.5" /> Configure</AdminButton></td>
         </tr>
@@ -71,6 +78,13 @@ onMounted(load);
         <AdminSelect v-model="form.type" label="Charge type" :options="[{ value: 'percent', label: 'Percentage of service subtotal' }, { value: 'fixed', label: 'Fixed amount per booking' }]" :disabled="!form.enabled" />
         <AdminInput v-if="form.type === 'percent'" v-model.number="form.percent" label="Percentage" type="number" min="0" max="100" hint="Example: 5 adds 5% to the service price." :disabled="!form.enabled" />
         <AdminInput v-else v-model="form.fixed" label="Fixed amount (₦)" inputmode="decimal" hint="Example: 500 adds ₦500 per booking." :disabled="!form.enabled" />
+        <div class="space-y-1 rounded-lg border border-line bg-raised/30 p-3">
+          <label class="flex items-center gap-2 text-xs font-semibold">
+            <input v-model="form.waitlistEnabled" type="checkbox" class="rounded" :disabled="!form.enabled">
+            Bill service charge on waitlist payments
+          </label>
+          <p class="text-[10px] text-muted">When customers pay to join the waitlist, charge the same customer-facing fee as normal booking checkout.</p>
+        </div>
         <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]"><p class="font-semibold">Customer preview</p><p class="mt-1 text-muted">{{ !form.enabled ? 'Disabled — customers pay the service price only.' : form.type === 'percent' ? `${form.percent || 0}% added to the service subtotal.` : `${formatNaira((Number(form.fixed.replace(/[^0-9.]/g, '')) || 0) * 100)} added per booking.` }}</p><p class="mt-1 text-muted">A ₦20,000 service becomes {{ formatNaira(2000000 + (form.type === 'percent' ? Math.round(2000000 * (Number(form.percent) || 0) / 100) : Math.round((Number(form.fixed.replace(/[^0-9.]/g, '')) || 0) * 100))) }}.</p></div>
       </div>
       <template #footer><div class="flex justify-end gap-2"><AdminButton variant="ghost" @click="open = false">Cancel</AdminButton><AdminButton :loading="saving" @click="save">Save service charge</AdminButton></div></template>

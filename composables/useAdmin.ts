@@ -69,7 +69,7 @@ export function useAdminBusinesses() {
     try { return await adminApi.suspendBusiness(id, payload); }
     finally { saving.value = false; }
   }
-  async function updateServiceCharge(id: string, payload: { enabled: boolean; type: 'percent' | 'fixed'; percent?: number; fixedKobo?: number }) {
+  async function updateServiceCharge(id: string, payload: { enabled: boolean; type: 'percent' | 'fixed'; percent?: number; fixedKobo?: number; waitlistEnabled?: boolean }) {
     saving.value = true;
     try { return await adminApi.updateServiceCharge(id, payload); }
     finally { saving.value = false; }
