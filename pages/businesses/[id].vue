@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, CalendarPlus, ExternalLink, PauseCircle, Percent, PlayCircle, RefreshCw, ShieldAlert, Ticket, UserCog } from 'lucide-vue-next';
+import { ArrowLeft, CalendarPlus, ExternalLink, Landmark, PauseCircle, Percent, PlayCircle, RefreshCw, ShieldAlert, Ticket, UserCog } from 'lucide-vue-next';
 import { useAdminAuthStore } from '~/stores/auth';
 import { formatDate, formatNaira, titleCase } from '~/utils/format';
 useSeoMeta({ title: 'Business detail' });
@@ -8,7 +8,7 @@ const toast = useAdminToast();
 const auth = useAdminAuthStore();
 const config = useRuntimeConfig();
 const notesApi = useAdminNotes('business', String(route.params.id));
-const { business: data, plans, loading, saving, loadBusiness, loadPlans, changePlan: persistPlan, extendTrial: persistTrial, suspend: persistSuspend, updateServiceCharge: persistServiceCharge, updateProviderFee: persistProviderFee, grantCoupon: persistCoupon, impersonate } = useAdminBusinesses();
+const { business: data, plans, loading, saving, loadBusiness, loadPlans, changePlan: persistPlan, extendTrial: persistTrial, suspend: persistSuspend, updateServiceCharge: persistServiceCharge, updateProviderFee: persistProviderFee, updateDirectTransfer: persistDirectTransfer, grantCoupon: persistCoupon, impersonate } = useAdminBusinesses();
 const planOpen = ref(false);
 const trialOpen = ref(false);
 const suspendOpen = ref(false);
@@ -24,6 +24,32 @@ const chargeOpen = ref(false);
 const charge = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '', waitlistEnabled: true });
 const providerFeeOpen = ref(false);
 const providerFee = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
+const directTransferOpen = ref(false);
+const directTransfer = reactive({ enabled: false, bankName: '', accountNumber: '', accountName: '', instructions: '' });
+function openDirectTransfer() {
+  directTransfer.enabled = Boolean(data.value?.business?.directTransferEnabled);
+  directTransfer.bankName = data.value?.business?.directTransferBankName || data.value?.business?.settlementBankName || '';
+  directTransfer.accountNumber = data.value?.business?.directTransferAccountNumber || data.value?.business?.settlementAccountNumber || '';
+  directTransfer.accountName = data.value?.business?.directTransferAccountName || data.value?.business?.settlementAccountName || '';
+  directTransfer.instructions = data.value?.business?.directTransferInstructions || '';
+  directTransferOpen.value = true;
+}
+async function saveDirectTransfer() {
+  saving.value = true;
+  try {
+    await persistDirectTransfer(String(route.params.id), {
+      enabled: directTransfer.enabled,
+      bankName: directTransfer.bankName.trim() || undefined,
+      accountNumber: directTransfer.accountNumber.trim() || undefined,
+      accountName: directTransfer.accountName.trim() || undefined,
+      instructions: directTransfer.instructions.trim() || undefined,
+    });
+    toast.success('Direct bank transfer settings updated.');
+    directTransferOpen.value = false;
+    await load();
+  } catch (error) { toast.error((error as Error).message); }
+  finally { saving.value = false; }
+}
 const providerFeePreview = computed(() => {
   if (!providerFee.enabled) return 'Disabled — the provider keeps the full service subtotal.';
   return providerFee.type === 'percent' ? `${providerFee.percent || 0}% deducted from the provider subtotal.` : `₦${moneyNumber(providerFee.fixed).toLocaleString('en-NG')} deducted per booking.`;
@@ -151,6 +177,23 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
         </div>
       </div>
 
+      <div class="card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-raised"><Landmark class="h-4 w-4" /></div>
+            <div>
+              <p class="text-xs font-bold">Direct bank transfer (offline fallback)</p>
+              <p class="mt-1 text-[11px] text-muted">Allows customers to transfer to vendor account directly when payment gateway is down. Requires manual vendor approval.</p>
+              <p class="mt-2 text-sm font-bold">
+                <span v-if="data.business.directTransferEnabled" class="text-emerald-500 font-semibold">Enabled · {{ data.business.directTransferBankName || 'Bank' }} ({{ data.business.directTransferAccountNumber }})</span>
+                <span v-else class="text-muted">Disabled</span>
+              </p>
+            </div>
+          </div>
+          <AdminButton v-if="auth.isSuperAdmin" variant="outline" @click="openDirectTransfer">Configure</AdminButton>
+        </div>
+      </div>
+
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="card"><div class="border-b border-line p-4"><p class="text-xs font-bold">Team</p></div><div class="divide-y divide-line"><div v-for="member in data.memberships" :key="member.id" class="flex flex-wrap items-center gap-2 px-4 py-3 text-[11px]"><p class="font-semibold">{{ member.user?.name }}</p><span class="text-[9px] text-muted">{{ member.user?.email }}</span><AdminBadge class="ml-auto" :variant="member.role === 'owner' ? 'accent' : 'neutral'">{{ member.role }}</AdminBadge><span class="text-[9px] text-muted">{{ member.status }}</span></div></div></div>
         <div class="card"><div class="border-b border-line p-4"><p class="text-xs font-bold">Payment history</p></div><div class="divide-y divide-line"><div v-for="payment in data.payments" :key="payment.id" class="flex items-center justify-between gap-2 px-4 py-2.5 text-[10px]"><div><p class="font-mono">{{ payment.reference }}</p><p class="text-muted">{{ payment.purpose }} · {{ formatDate(payment.createdAt, true) }}</p></div><div class="text-right"><p class="font-bold">{{ formatNaira(payment.amountKobo) }}</p><AdminBadge :variant="payment.status === 'success' ? 'success' : payment.status === 'failed' ? 'danger' : 'warning'">{{ payment.status }}</AdminBadge></div></div><p v-if="!data.payments.length" class="p-4 text-[10px] text-muted">No payments yet.</p></div></div>
@@ -204,6 +247,25 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
           <p class="text-[10px] leading-relaxed text-muted">The charge is calculated server-side when the booking is created. Existing bookings keep the charge that applied when they were booked.</p>
         </div>
         <div class="mt-4 flex justify-end gap-2"><AdminButton variant="ghost" @click="chargeOpen = false">Cancel</AdminButton><AdminButton :loading="saving" @click="saveCharge">Save service charge</AdminButton></div>
+      </AdminModal>
+      <AdminModal v-model:open="directTransferOpen" title="Direct bank transfer fallback" description="Show vendor bank account to customers at checkout for direct bank transfer when the payment gateway is unavailable.">
+        <div class="space-y-3">
+          <label class="flex items-center gap-2 text-xs font-semibold">
+            <input v-model="directTransfer.enabled" type="checkbox" class="rounded"> Enable direct bank transfer for this business
+          </label>
+          <AdminInput v-model="directTransfer.bankName" label="Bank Name" placeholder="e.g. PalmPay, OPay, GTBank" :disabled="!directTransfer.enabled" />
+          <AdminInput v-model="directTransfer.accountNumber" label="Account Number" placeholder="e.g. 9052533031" :disabled="!directTransfer.enabled" />
+          <AdminInput v-model="directTransfer.accountName" label="Account Name" placeholder="e.g. Oshinowo Ayotomiwa" :disabled="!directTransfer.enabled" />
+          <AdminInput v-model="directTransfer.instructions" label="Customer Instructions (optional)" placeholder="e.g. Transfer exact amount and enter your account name as sender" :disabled="!directTransfer.enabled" />
+          <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]">
+            <p class="font-semibold">How it works</p>
+            <p class="mt-1 text-muted">When enabled, customers can select 'Pay with Direct Transfer' on storefront checkout. Bookings will show as 'Pending verification' until the vendor clicks 'Approve transfer' in their dashboard.</p>
+          </div>
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <AdminButton variant="ghost" @click="directTransferOpen = false">Cancel</AdminButton>
+          <AdminButton :loading="saving" @click="saveDirectTransfer">Save settings</AdminButton>
+        </div>
       </AdminModal>
     </template>
   </div>

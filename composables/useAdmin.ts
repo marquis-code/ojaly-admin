@@ -74,6 +74,11 @@ export function useAdminBusinesses() {
     try { return await adminApi.updateServiceCharge(id, payload); }
     finally { saving.value = false; }
   }
+  async function updateDirectTransfer(id: string, payload: { enabled: boolean; bankName?: string; bankCode?: string; accountNumber?: string; accountName?: string; instructions?: string }) {
+    saving.value = true;
+    try { return await adminApi.updateDirectTransfer(id, payload); }
+    finally { saving.value = false; }
+  }
   async function updateProviderFee(id: string, payload: { enabled: boolean; type: 'percent' | 'fixed'; percent?: number; fixedKobo?: number }) {
     saving.value = true;
     try { return await adminApi.updateProviderFee(id, payload); }
@@ -89,7 +94,7 @@ export function useAdminBusinesses() {
     try { return await adminApi.impersonateBusiness(id); }
     finally { saving.value = false; }
   }
-  return { result, business, plans, loading, saving, list, loadBusiness, loadPlans, changePlan, extendTrial, suspend, updateServiceCharge, updateProviderFee, grantCoupon, impersonate };
+  return { result, business, plans, loading, saving, list, loadBusiness, loadPlans, changePlan, extendTrial, suspend, updateServiceCharge, updateProviderFee, updateDirectTransfer, grantCoupon, impersonate };
 }
 
 export function useAdminPlans() {

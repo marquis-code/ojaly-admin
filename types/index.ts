@@ -6,7 +6,8 @@ export interface AdminUser {
 export interface AdminBusiness {
   id: string; name: string; slug: string; category: string; owner?: { name: string; email: string } | null;
   published: boolean; suspended: boolean; subscription?: AdminSubscription | null;
-  products: number; sales: number; revenueKobo: number; serviceChargeEnabled?: boolean; serviceChargeType?: 'percent' | 'fixed'; serviceChargePercent?: number; serviceChargeFixedKobo?: number; serviceChargeWaitlistEnabled?: boolean; createdAt: string;
+  products: number; sales: number; revenueKobo: number; serviceChargeEnabled?: boolean; serviceChargeType?: 'percent' | 'fixed'; serviceChargePercent?: number; serviceChargeFixedKobo?: number; serviceChargeWaitlistEnabled?: boolean;
+  directTransferEnabled?: boolean; directTransferBankName?: string | null; directTransferBankCode?: string | null; directTransferAccountNumber?: string | null; directTransferAccountName?: string | null; directTransferInstructions?: string | null; createdAt: string;
 }
 export interface AdminSubscription {
   planKey: string; status: string; trialEndsAt?: string | null; currentPeriodEnd?: string | null;
