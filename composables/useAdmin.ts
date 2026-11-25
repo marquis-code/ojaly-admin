@@ -74,7 +74,7 @@ export function useAdminBusinesses() {
     try { return await adminApi.updateServiceCharge(id, payload); }
     finally { saving.value = false; }
   }
-  async function updateDirectTransfer(id: string, payload: { enabled: boolean; bankName?: string; bankCode?: string; accountNumber?: string; accountName?: string; instructions?: string }) {
+  async function updateDirectTransfer(id: string, payload: { enabled: boolean; cardPaymentEnabled?: boolean; bankName?: string; bankCode?: string; accountNumber?: string; accountName?: string; instructions?: string }) {
     saving.value = true;
     try { return await adminApi.updateDirectTransfer(id, payload); }
     finally { saving.value = false; }

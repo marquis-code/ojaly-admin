@@ -25,9 +25,10 @@ const charge = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed'
 const providerFeeOpen = ref(false);
 const providerFee = reactive({ enabled: false, type: 'percent' as 'percent' | 'fixed', percent: 5, fixed: '' });
 const directTransferOpen = ref(false);
-const directTransfer = reactive({ enabled: false, bankName: '', accountNumber: '', accountName: '', instructions: '' });
+const directTransfer = reactive({ enabled: false, cardPaymentEnabled: true, bankName: '', accountNumber: '', accountName: '', instructions: '' });
 function openDirectTransfer() {
   directTransfer.enabled = Boolean(data.value?.business?.directTransferEnabled);
+  directTransfer.cardPaymentEnabled = data.value?.business?.cardPaymentEnabled !== false;
   directTransfer.bankName = data.value?.business?.directTransferBankName || data.value?.business?.settlementBankName || '';
   directTransfer.accountNumber = data.value?.business?.directTransferAccountNumber || data.value?.business?.settlementAccountNumber || '';
   directTransfer.accountName = data.value?.business?.directTransferAccountName || data.value?.business?.settlementAccountName || '';
@@ -39,12 +40,13 @@ async function saveDirectTransfer() {
   try {
     await persistDirectTransfer(String(route.params.id), {
       enabled: directTransfer.enabled,
+      cardPaymentEnabled: directTransfer.cardPaymentEnabled,
       bankName: directTransfer.bankName.trim() || undefined,
       accountNumber: directTransfer.accountNumber.trim() || undefined,
       accountName: directTransfer.accountName.trim() || undefined,
       instructions: directTransfer.instructions.trim() || undefined,
     });
-    toast.success('Direct bank transfer settings updated.');
+    toast.success('Payment method settings updated.');
     directTransferOpen.value = false;
     await load();
   } catch (error) { toast.error((error as Error).message); }
@@ -182,12 +184,16 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
           <div class="flex items-start gap-3">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-raised"><Landmark class="h-4 w-4" /></div>
             <div>
-              <p class="text-xs font-bold">Direct bank transfer (offline fallback)</p>
-              <p class="mt-1 text-[11px] text-muted">Allows customers to transfer to vendor account directly when payment gateway is down. Requires manual vendor approval.</p>
-              <p class="mt-2 text-sm font-bold">
-                <span v-if="data.business.directTransferEnabled" class="text-emerald-500 font-semibold">Enabled · {{ data.business.directTransferBankName || 'Bank' }} ({{ data.business.directTransferAccountNumber }})</span>
-                <span v-else class="text-muted">Disabled</span>
-              </p>
+              <p class="text-xs font-bold">Payment methods (Storefront & Checkout)</p>
+              <p class="mt-1 text-[11px] text-muted">Controls card/online payments (Paystack) and direct bank transfers shown to customers.</p>
+              <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" :class="data.business.cardPaymentEnabled !== false ? 'bg-emerald-500/10 text-emerald-600' : 'bg-danger/10 text-danger'">
+                  Card Payments: {{ data.business.cardPaymentEnabled !== false ? 'Active' : 'Disabled' }}
+                </span>
+                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" :class="data.business.directTransferEnabled ? 'bg-brand-500/10 text-brand-600' : 'bg-raised text-muted'">
+                  Direct Transfer: {{ data.business.directTransferEnabled ? `Active (${data.business.directTransferBankName || 'Bank'} · ${data.business.directTransferAccountNumber})` : 'Disabled' }}
+                </span>
+              </div>
             </div>
           </div>
           <AdminButton v-if="auth.isSuperAdmin" variant="outline" @click="openDirectTransfer">Configure</AdminButton>
@@ -248,18 +254,37 @@ onMounted(async () => { await Promise.all([load(), loadPlanOptions()]); await no
         </div>
         <div class="mt-4 flex justify-end gap-2"><AdminButton variant="ghost" @click="chargeOpen = false">Cancel</AdminButton><AdminButton :loading="saving" @click="saveCharge">Save service charge</AdminButton></div>
       </AdminModal>
-      <AdminModal v-model:open="directTransferOpen" title="Direct bank transfer fallback" description="Show vendor bank account to customers at checkout for direct bank transfer when the payment gateway is unavailable.">
-        <div class="space-y-3">
-          <label class="flex items-center gap-2 text-xs font-semibold">
-            <input v-model="directTransfer.enabled" type="checkbox" class="rounded"> Enable direct bank transfer for this business
-          </label>
-          <AdminInput v-model="directTransfer.bankName" label="Bank Name" placeholder="e.g. PalmPay, OPay, GTBank" :disabled="!directTransfer.enabled" />
-          <AdminInput v-model="directTransfer.accountNumber" label="Account Number" placeholder="e.g. 9052533031" :disabled="!directTransfer.enabled" />
-          <AdminInput v-model="directTransfer.accountName" label="Account Name" placeholder="e.g. Oshinowo Ayotomiwa" :disabled="!directTransfer.enabled" />
-          <AdminInput v-model="directTransfer.instructions" label="Customer Instructions (optional)" placeholder="e.g. Transfer exact amount and enter your account name as sender" :disabled="!directTransfer.enabled" />
-          <div class="rounded-lg border border-line bg-raised/50 p-3 text-[11px]">
-            <p class="font-semibold">How it works</p>
-            <p class="mt-1 text-muted">When enabled, customers can select 'Pay with Direct Transfer' on storefront checkout. Bookings will show as 'Pending verification' until the vendor clicks 'Approve transfer' in their dashboard.</p>
+      <AdminModal v-model:open="directTransferOpen" title="Payment methods & offline fallback" description="Manage payment options shown to customers at checkout. Toggle off card payments when Paystack is experiencing downtime.">
+        <div class="space-y-4">
+          <!-- Real Toggle: Card Payments -->
+          <AdminToggle
+            v-model="directTransfer.cardPaymentEnabled"
+            label="Payment via Card (Paystack)"
+            description="Allow customers to pay online using cards, bank transfer, and USSD through Paystack. Toggle OFF when the gateway is unavailable."
+          />
+
+          <!-- Real Toggle: Direct Bank Transfer -->
+          <AdminToggle
+            v-model="directTransfer.enabled"
+            label="Direct Bank Transfer fallback"
+            description="Show vendor bank account to customers at checkout for direct transfer. Bookings remain pending verification until vendor confirms in dashboard."
+          />
+
+          <div v-if="directTransfer.enabled" class="space-y-3 rounded-2xl border border-line bg-raised/30 p-4">
+            <p class="text-xs font-bold text-ink">Vendor Bank Account Details</p>
+            <AdminInput v-model="directTransfer.bankName" label="Bank Name" placeholder="e.g. PalmPay, OPay, GTBank" />
+            <AdminInput v-model="directTransfer.accountNumber" label="Account Number" placeholder="e.g. 9052533031" />
+            <AdminInput v-model="directTransfer.accountName" label="Account Name" placeholder="e.g. Oshinowo Ayotomiwa" />
+            <AdminInput v-model="directTransfer.instructions" label="Customer Instructions (optional)" placeholder="e.g. Transfer exact amount and enter your account name as sender" />
+          </div>
+
+          <div class="rounded-xl border border-line bg-raised/50 p-3 text-[11px]">
+            <p class="font-bold text-ink">Storefront Behavior</p>
+            <p class="mt-1 leading-relaxed text-muted">
+              • <strong>Card ON, Direct Transfer ON</strong>: Customer can choose between Card or Direct Transfer.<br>
+              • <strong>Card OFF, Direct Transfer ON</strong>: 'Pay Online' is removed completely. Direct transfer is the sole payment method.<br>
+              • <strong>Card ON, Direct Transfer OFF</strong>: Standard Paystack card checkout.
+            </p>
           </div>
         </div>
         <div class="mt-4 flex justify-end gap-2">
