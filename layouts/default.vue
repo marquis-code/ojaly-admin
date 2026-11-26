@@ -9,7 +9,7 @@ const groups = [
   { label: 'Observe', links: [{ to: '/', label: 'Overview', icon: LayoutDashboard }, { to: '/fraud', label: 'Fraud & risk', icon: ShieldAlert }, { to: '/audit', label: 'Audit log', icon: FileClock }] },
   { label: 'Network', links: [{ to: '/users', label: 'Users', icon: Users }, { to: '/businesses', label: 'Businesses', icon: Building2 }] },
   { label: 'Growth', links: [{ to: '/marketplace', label: 'Marketplace', icon: Store }, { to: '/promotions', label: 'Promotions', icon: Megaphone }, { to: '/campus', label: 'Community applications', icon: GraduationCap }] },
-  { label: 'Revenue', links: [{ to: '/payments', label: 'Payments', icon: CreditCard }, { to: '/payouts', label: 'Payouts & withdrawals', icon: Banknote }, { to: '/plans', label: 'Plans & coupons', icon: Zap }, { to: '/service-charges', label: 'Service charges', icon: Percent }, { to: '/affiliates', label: 'Affiliates', icon: Gift }] },
+  { label: 'Revenue', links: [{ to: '/payments', label: 'Payments', icon: CreditCard }, { to: '/withdrawals', label: 'Vendor withdrawals', icon: Banknote }, { to: '/plans', label: 'Plans & coupons', icon: Zap }, { to: '/service-charges', label: 'Service charges', icon: Percent }, { to: '/affiliates', label: 'Affiliates', icon: Gift }] },
   { label: 'Operations', links: [{ to: '/support', label: 'Support inbox', icon: LifeBuoy }, { to: '/whatsapp', label: 'WhatsApp health', icon: MessageCircle }] },
 ];
 const active = (to: string) => to === '/' ? route.path === '/' : route.path.startsWith(to);

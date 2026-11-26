@@ -23,6 +23,8 @@ export const adminApi = {
   closeSupport(id: string) { return unwrap<Record<string, any>>(http().post(`/admin/support/conversations/${id}/close`)); },
   fraudEvents(limit = 100) { return unwrap<Record<string, any>[]>(http().get('/admin/fraud/events', { params: { limit } })); },
   dashboard() { return unwrap<AdminDashboard>(http().get('/admin/dashboard')); },
+  withdrawals() { return unwrap<Record<string, any>[]>(http().get('/admin/withdrawals')); },
+  updateWithdrawal(id: string, payload: { status: 'approved' | 'paid' | 'rejected'; adminNote?: string; reference?: string }) { return unwrap<Record<string, any>>(http().patch(`/admin/withdrawals/${id}`, payload)); },
   users(params: Record<string, unknown>) { return unwrap<Paginated<AdminUser>>(http().get('/admin/users', { params })); },
   user(id: string) { return unwrap<{ user: AdminUser; memberships: Record<string, unknown>[]; audit: AdminAuditLog[] }>(http().get(`/admin/users/${id}`)); },
   updateUser(id: string, payload: { isActive?: boolean; platformRole?: string | null }) { return unwrap<{ updated: boolean }>(http().patch(`/admin/users/${id}`, payload)); },
